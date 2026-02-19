@@ -1,337 +1,74 @@
-{
-  "school_name": "ClassDoodle",
+﻿{
+  "school_name": "Rewrite Academy",
   "schedule_type": "Matric Rewrite",
+  "student": "Asingamaanda Nefefe",
+  "student_id": "ASI001",
   "daily_hours": "7:00 AM - 1:00 PM",
   "subjects": {
-    "Mathematics": {
-      "periods_per_week": 6,
-      "color": "#FF6B6B"
-    },
-    "Physical Sciences": {
-      "periods_per_week": 5,
-      "color": "#4ECDC4"
-    },
-    "English Home Language": {
-      "periods_per_week": 4,
-      "color": "#45B7D1"
-    },
-    "Life Sciences": {
-      "periods_per_week": 4,
-      "color": "#96CEB4"
-    },
-    "Afrikaans FAL": {
-      "periods_per_week": 3,
-      "color": "#FFEAA7"
-    },
-    "Accounting": {
-      "periods_per_week": 4,
-      "color": "#DFE6E9"
-    },
-    "Life Orientation": {
-      "periods_per_week": 2,
-      "color": "#74B9FF"
-    }
+    "Mathematics": { "periods_per_week": 10, "color": "#22d3ee" },
+    "Life Sciences": { "periods_per_week": 10, "color": "#4ade80" },
+    "Geography":     { "periods_per_week": 10, "color": "#f472b6" }
   },
   "time_slots": [
-    {
-      "start": "07:00",
-      "end": "07:50",
-      "duration": 50,
-      "type": "period"
-    },
-    {
-      "start": "07:50",
-      "end": "08:40",
-      "duration": 50,
-      "type": "period"
-    },
-    {
-      "start": "08:40",
-      "end": "09:00",
-      "duration": 20,
-      "type": "break"
-    },
-    {
-      "start": "09:00",
-      "end": "09:50",
-      "duration": 50,
-      "type": "period"
-    },
-    {
-      "start": "09:50",
-      "end": "10:40",
-      "duration": 50,
-      "type": "period"
-    },
-    {
-      "start": "10:40",
-      "end": "11:30",
-      "duration": 50,
-      "type": "period"
-    },
-    {
-      "start": "11:30",
-      "end": "12:20",
-      "duration": 50,
-      "type": "period"
-    },
-    {
-      "start": "12:20",
-      "end": "13:00",
-      "duration": 40,
-      "type": "wrap-up"
-    }
+    { "start": "07:00", "end": "07:50", "duration": 50, "type": "period" },
+    { "start": "07:50", "end": "08:40", "duration": 50, "type": "period" },
+    { "start": "08:40", "end": "09:00", "duration": 20, "type": "break"  },
+    { "start": "09:00", "end": "09:50", "duration": 50, "type": "period" },
+    { "start": "09:50", "end": "10:40", "duration": 50, "type": "period" },
+    { "start": "10:40", "end": "11:30", "duration": 50, "type": "period" },
+    { "start": "11:30", "end": "12:20", "duration": 50, "type": "period" },
+    { "start": "12:20", "end": "13:00", "duration": 40, "type": "wrap-up"}
   ],
   "weekly_schedule": {
     "Monday": [
-      {
-        "time": "07:00 - 07:50",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "07:50 - 08:40",
-        "subject": "Physical Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "08:40 - 09:00",
-        "subject": "\u2615 TEA BREAK",
-        "duration": 20,
-        "type": "break"
-      },
-      {
-        "time": "09:00 - 09:50",
-        "subject": "English Home Language",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "09:50 - 10:40",
-        "subject": "Life Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "10:40 - 11:30",
-        "subject": "Accounting",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "11:30 - 12:20",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "12:20 - 13:00",
-        "subject": "Study Skills Workshop",
-        "duration": 40,
-        "type": "wrap-up"
-      }
+      { "time": "07:00 - 07:50", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "07:50 - 08:40", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "08:40 - 09:00", "subject": "\u2615 TEA BREAK",        "duration": 20, "type": "break"   },
+      { "time": "09:00 - 09:50", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "09:50 - 10:40", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "10:40 - 11:30", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "11:30 - 12:20", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "12:20 - 13:00", "subject": "Revision Session",        "duration": 40, "type": "wrap-up" }
     ],
     "Tuesday": [
-      {
-        "time": "07:00 - 07:50",
-        "subject": "Physical Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "07:50 - 08:40",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "08:40 - 09:00",
-        "subject": "\u2615 TEA BREAK",
-        "duration": 20,
-        "type": "break"
-      },
-      {
-        "time": "09:00 - 09:50",
-        "subject": "Afrikaans FAL",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "09:50 - 10:40",
-        "subject": "Life Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "10:40 - 11:30",
-        "subject": "English Home Language",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "11:30 - 12:20",
-        "subject": "Accounting",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "12:20 - 13:00",
-        "subject": "Exam Prep Session",
-        "duration": 40,
-        "type": "wrap-up"
-      }
+      { "time": "07:00 - 07:50", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "07:50 - 08:40", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "08:40 - 09:00", "subject": "\u2615 TEA BREAK",        "duration": 20, "type": "break"   },
+      { "time": "09:00 - 09:50", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "09:50 - 10:40", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "10:40 - 11:30", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "11:30 - 12:20", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "12:20 - 13:00", "subject": "Past Papers Practice",    "duration": 40, "type": "wrap-up" }
     ],
     "Wednesday": [
-      {
-        "time": "07:00 - 07:50",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "07:50 - 08:40",
-        "subject": "English Home Language",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "08:40 - 09:00",
-        "subject": "\u2615 TEA BREAK",
-        "duration": 20,
-        "type": "break"
-      },
-      {
-        "time": "09:00 - 09:50",
-        "subject": "Physical Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "09:50 - 10:40",
-        "subject": "Accounting",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "10:40 - 11:30",
-        "subject": "Life Orientation",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "11:30 - 12:20",
-        "subject": "Life Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "12:20 - 13:00",
-        "subject": "Mental Health Check-in",
-        "duration": 40,
-        "type": "wrap-up"
-      }
+      { "time": "07:00 - 07:50", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "07:50 - 08:40", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "08:40 - 09:00", "subject": "\u2615 TEA BREAK",        "duration": 20, "type": "break"   },
+      { "time": "09:00 - 09:50", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "09:50 - 10:40", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "10:40 - 11:30", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "11:30 - 12:20", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "12:20 - 13:00", "subject": "Study Skills Workshop",   "duration": 40, "type": "wrap-up" }
     ],
     "Thursday": [
-      {
-        "time": "07:00 - 07:50",
-        "subject": "Life Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "07:50 - 08:40",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "08:40 - 09:00",
-        "subject": "\u2615 TEA BREAK",
-        "duration": 20,
-        "type": "break"
-      },
-      {
-        "time": "09:00 - 09:50",
-        "subject": "Physical Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "09:50 - 10:40",
-        "subject": "English Home Language",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "10:40 - 11:30",
-        "subject": "Afrikaans FAL",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "11:30 - 12:20",
-        "subject": "Accounting",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "12:20 - 13:00",
-        "subject": "Past Papers Practice",
-        "duration": 40,
-        "type": "wrap-up"
-      }
+      { "time": "07:00 - 07:50", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "07:50 - 08:40", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "08:40 - 09:00", "subject": "\u2615 TEA BREAK",        "duration": 20, "type": "break"   },
+      { "time": "09:00 - 09:50", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "09:50 - 10:40", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "10:40 - 11:30", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "11:30 - 12:20", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "12:20 - 13:00", "subject": "Mock Exam Prep",          "duration": 40, "type": "wrap-up" }
     ],
     "Friday": [
-      {
-        "time": "07:00 - 07:50",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "07:50 - 08:40",
-        "subject": "Physical Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "08:40 - 09:00",
-        "subject": "\u2615 TEA BREAK",
-        "duration": 20,
-        "type": "break"
-      },
-      {
-        "time": "09:00 - 09:50",
-        "subject": "Afrikaans FAL",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "09:50 - 10:40",
-        "subject": "Life Sciences",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "10:40 - 11:30",
-        "subject": "Life Orientation",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "11:30 - 12:20",
-        "subject": "Mathematics",
-        "duration": 50,
-        "type": "period"
-      },
-      {
-        "time": "12:20 - 13:00",
-        "subject": "Weekly Review & Goal Setting",
-        "duration": 40,
-        "type": "wrap-up"
-      }
+      { "time": "07:00 - 07:50", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "07:50 - 08:40", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "08:40 - 09:00", "subject": "\u2615 TEA BREAK",        "duration": 20, "type": "break"   },
+      { "time": "09:00 - 09:50", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "09:50 - 10:40", "subject": "Mathematics",             "duration": 50, "type": "period"  },
+      { "time": "10:40 - 11:30", "subject": "Life Sciences",           "duration": 50, "type": "period"  },
+      { "time": "11:30 - 12:20", "subject": "Geography",               "duration": 50, "type": "period"  },
+      { "time": "12:20 - 13:00", "subject": "Weekly Review & Goal Setting", "duration": 40, "type": "wrap-up" }
     ]
   }
 }
