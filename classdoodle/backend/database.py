@@ -225,6 +225,67 @@ class ClassDoodleDB:
             )
             conn.commit()
 
+        # Seed Asingamaanda Nefefe (ASI001) if not exists
+        existing_student = cursor.execute(
+            "SELECT id FROM students WHERE student_id='ASI001'"
+        ).fetchone()
+        if not existing_student:
+            cursor.execute("""
+                INSERT INTO students
+                  (student_id, name, email, enrollment_date, status)
+                VALUES ('ASI001','Asingamaanda Nefefe','asi001@rewriteacademy.local',
+                        date('now'),'active')
+            """)
+            for subj in ('Mathematics', 'Life Sciences', 'Geography'):
+                cursor.execute(
+                    "INSERT INTO student_subjects (student_id, subject) VALUES (?,?)",
+                    ('ASI001', subj)
+                )
+            cursor.execute(
+                "INSERT INTO user_accounts (username, password_hash, role, student_id) VALUES (?,?,?,?)",
+                ('ASI001', generate_password_hash('student123'), 'student', 'ASI001')
+            )
+            # Seed timetable slots for ASI001
+            _slots = [
+                ('Monday',    1, 'Mathematics',  '07:00', '07:50'),
+                ('Monday',    2, 'Life Sciences', '07:50', '08:40'),
+                ('Monday',    3, 'Geography',     '09:00', '09:50'),
+                ('Monday',    4, 'Mathematics',   '09:50', '10:40'),
+                ('Monday',    5, 'Life Sciences', '10:40', '11:30'),
+                ('Monday',    6, 'Geography',     '11:30', '12:20'),
+                ('Tuesday',   1, 'Geography',     '07:00', '07:50'),
+                ('Tuesday',   2, 'Mathematics',   '07:50', '08:40'),
+                ('Tuesday',   3, 'Life Sciences', '09:00', '09:50'),
+                ('Tuesday',   4, 'Geography',     '09:50', '10:40'),
+                ('Tuesday',   5, 'Mathematics',   '10:40', '11:30'),
+                ('Tuesday',   6, 'Life Sciences', '11:30', '12:20'),
+                ('Wednesday', 1, 'Mathematics',   '07:00', '07:50'),
+                ('Wednesday', 2, 'Geography',     '07:50', '08:40'),
+                ('Wednesday', 3, 'Life Sciences', '09:00', '09:50'),
+                ('Wednesday', 4, 'Mathematics',   '09:50', '10:40'),
+                ('Wednesday', 5, 'Geography',     '10:40', '11:30'),
+                ('Wednesday', 6, 'Life Sciences', '11:30', '12:20'),
+                ('Thursday',  1, 'Life Sciences', '07:00', '07:50'),
+                ('Thursday',  2, 'Mathematics',   '07:50', '08:40'),
+                ('Thursday',  3, 'Geography',     '09:00', '09:50'),
+                ('Thursday',  4, 'Life Sciences', '09:50', '10:40'),
+                ('Thursday',  5, 'Mathematics',   '10:40', '11:30'),
+                ('Thursday',  6, 'Geography',     '11:30', '12:20'),
+                ('Friday',    1, 'Mathematics',   '07:00', '07:50'),
+                ('Friday',    2, 'Life Sciences', '07:50', '08:40'),
+                ('Friday',    3, 'Geography',     '09:00', '09:50'),
+                ('Friday',    4, 'Mathematics',   '09:50', '10:40'),
+                ('Friday',    5, 'Life Sciences', '10:40', '11:30'),
+                ('Friday',    6, 'Geography',     '11:30', '12:20'),
+            ]
+            for day, period, subject, t_from, t_to in _slots:
+                cursor.execute("""
+                    INSERT INTO timetable_slots
+                      (student_id, day, period, subject, time_from, time_to)
+                    VALUES (?,?,?,?,?,?)
+                """, ('ASI001', day, period, subject, t_from, t_to))
+            conn.commit()
+
         print("Database initialized successfully")
     
     def execute_query(self, query, params=None):
