@@ -232,7 +232,7 @@ class ClassDoodleDB:
         if not existing_student:
             cursor.execute("""
                 INSERT INTO students
-                  (student_id, name, email, enrollment_date, status)
+                  (student_id, name, email, registration_date, status)
                 VALUES ('ASI001','Asingamaanda Nefefe','asi001@rewriteacademy.local',
                         date('now'),'active')
             """)
