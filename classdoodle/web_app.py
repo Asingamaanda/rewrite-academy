@@ -19,7 +19,7 @@ from backend.api import ClassDoodleAPI
 from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
 
 app = Flask(__name__)
-app.secret_key = 'classdoodle-secret-key-2026'
+app.secret_key = os.environ.get('SECRET_KEY', 'classdoodle-secret-key-2026')
 
 # File upload config
 UPLOAD_FOLDER = Path(__file__).parent / 'static' / 'uploads' / 'manlib'
@@ -33,6 +33,7 @@ CONTENT_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 CONTENT_ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
 
 DB_PATH = Path(__file__).parent / 'data' / 'classdoodle.db'
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # Custom Jinja filter
 @app.template_filter('format_number')
