@@ -1,189 +1,242 @@
 {% extends "base.html" %}
 
-{% block title %}{{ student.name }} - ClassDoodle{% endblock %}
+{% block title %}{{ student.name }} — Rewrite Academy{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 20px;">
-    <a href="/students" style="color: #667eea; text-decoration: none;">← Back to All Students</a>
+<style>
+  /* ── page-level tokens ───────────────────────────────────────── */
+  .profile-hero{
+    display:flex;align-items:center;gap:24px;
+    background:linear-gradient(135deg,rgba(34,211,238,.08),rgba(8,145,178,.04));
+    border:1px solid rgba(34,211,238,.15);
+    border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:28px;
+  }
+  .profile-avatar{
+    width:72px;height:72px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.9rem;font-weight:700;color:#06080f;flex-shrink:0;
+    box-shadow:0 0 24px rgba(34,211,238,.35);
+  }
+  .profile-meta h1{margin:0 0 4px;font-size:1.6rem;color:var(--fg);}
+  .profile-meta p{margin:0;color:var(--fg-muted);font-size:.9rem;}
+  .profile-badges{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+
+  /* ── kpi strip ───────────────────────────────────────────────── */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+       padding:20px 16px;text-align:center;transition:border-color .2s;}
+  .kpi:hover{border-color:rgba(34,211,238,.35);}
+  .kpi-value{font-size:1.8rem;font-weight:700;line-height:1;}
+  .kpi-label{font-size:.75rem;color:var(--fg-muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em;}
+  .kpi-cyan  .kpi-value{color:var(--accent);}
+  .kpi-green .kpi-value{color:#4ade80;}
+  .kpi-amber .kpi-value{color:#fbbf24;}
+  .kpi-red   .kpi-value{color:#f87171;}
+
+  /* ── section cards ───────────────────────────────────────────── */
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+  .detail-section{background:var(--surface);border:1px solid var(--border);
+                  border-radius:var(--radius-md);padding:22px 24px;}
+  .detail-section h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;
+                     color:var(--accent);margin:0 0 16px;display:flex;align-items:center;gap:8px;}
+  .detail-section.full{grid-column:1/-1;}
+  .info-row{display:flex;justify-content:space-between;align-items:center;
+            padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem;}
+  .info-row:last-child{border-bottom:none;}
+  .info-label{color:var(--fg-muted);}
+  .info-value{color:var(--fg);font-weight:500;}
+
+  /* ── subject pills ───────────────────────────────────────────── */
+  .subject-pill{display:inline-flex;align-items:center;gap:6px;
+    padding:6px 14px;border-radius:99px;font-size:.82rem;font-weight:600;
+    background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);color:var(--accent);}
+
+  /* ── score bar ───────────────────────────────────────────────── */
+  .score-bar-wrap{width:100%;background:rgba(255,255,255,.07);border-radius:99px;height:6px;margin-top:4px;}
+  .score-bar-fill{height:6px;border-radius:99px;transition:width .5s ease;}
+
+  /* ── actions ─────────────────────────────────────────────────── */
+  .action-strip{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;}
+  .btn-action{padding:9px 18px;border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;
+              border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.08);
+              color:var(--accent);cursor:pointer;text-decoration:none;
+              transition:background .2s,border-color .2s;}
+  .btn-action:hover{background:rgba(34,211,238,.18);border-color:var(--accent);}
+
+  @media(max-width:768px){
+    .kpi-strip{grid-template-columns:repeat(2,1fr);}
+    .detail-grid{grid-template-columns:1fr;}
+    .detail-section.full{grid-column:1;}
+  }
+</style>
+
+<!-- back link -->
+<a href="/students" style="display:inline-flex;align-items:center;gap:6px;color:var(--fg-muted);font-size:.85rem;text-decoration:none;margin-bottom:20px;">
+  &#8592; All Students
+</a>
+
+<!-- ── Hero ── -->
+<div class="profile-hero">
+  <div class="profile-avatar">{{ student.name[0] }}</div>
+  <div class="profile-meta">
+    <h1>{{ student.name }}</h1>
+    <p>{{ student.student_id }} &nbsp;·&nbsp; {{ student.email }}</p>
+    <div class="profile-badges">
+      <span class="badge-{{ 'success' if student.status == 'active' else 'danger' }}
+            " style="padding:3px 10px;border-radius:99px;font-size:.75rem;font-weight:600;
+            background:{{ 'rgba(74,222,128,.12)' if student.status=='active' else 'rgba(248,113,113,.12)' }};
+            color:{{ '#4ade80' if student.status=='active' else '#f87171' }};
+            border:1px solid {{ 'rgba(74,222,128,.3)' if student.status=='active' else 'rgba(248,113,113,.3)' }};">
+        {{ student.status|upper }}
+      </span>
+      {% for subj in student.subjects %}
+      <span class="subject-pill">{{ subj }}</span>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <div>
-        <h2 style="color: #667eea; margin: 0;">{{ student.name }}</h2>
-        <p style="color: #999; font-size: 1.1em; margin: 5px 0 0 0;">{{ student.student_id }} | {{ student.email }}</p>
-    </div>
+<!-- ── KPI strip ── -->
+<div class="kpi-strip">
+  <div class="kpi kpi-cyan">
+    <div class="kpi-value">{{ student.subjects|length }}</div>
+    <div class="kpi-label">Subjects</div>
+  </div>
+  <div class="kpi {% if student.overall_average >= 70 %}kpi-green{% elif student.overall_average >= 50 %}kpi-amber{% else %}kpi-red{% endif %}">
+    <div class="kpi-value">{{ student.overall_average if student.overall_average else '—' }}{% if student.overall_average %}<span style="font-size:1rem">%</span>{% endif %}</div>
+    <div class="kpi-label">Overall Avg</div>
+  </div>
+  <div class="kpi {% if student.attendance_rate >= 80 %}kpi-green{% elif student.attendance_rate >= 60 %}kpi-amber{% else %}kpi-red{% endif %}">
+    <div class="kpi-value">{{ student.attendance_rate if student.attendance_rate else '—' }}{% if student.attendance_rate %}<span style="font-size:1rem">%</span>{% endif %}</div>
+    <div class="kpi-label">Attendance</div>
+  </div>
+  <div class="kpi {% if student.risk_level == 'low' %}kpi-green{% elif student.risk_level == 'medium' %}kpi-amber{% else %}kpi-red{% endif %}">
+    <div class="kpi-value" style="font-size:1.2rem">{{ student.risk_level|upper if student.risk_level else '—' }}</div>
+    <div class="kpi-label">Risk Level</div>
+  </div>
 </div>
 
-<!-- Stats Overview -->
-<div class="stat-cards" style="margin-bottom: 40px;">
-    <div class="stat-card card-blue">
-        <h3>{{ student.subjects|length }}</h3>
-        <p>Subjects Enrolled</p>
-    </div>
-    
-    <div class="stat-card card-purple">
-        <h3>{{ student.overall_average if student.overall_average else 'N/A' }}%</h3>
-        <p>Overall Average</p>
-    </div>
-    
-    <div class="stat-card {% if student.risk_level == 'high' %}card-red{% elif student.risk_level == 'medium' %}card-yellow{% else %}card-green{% endif %}">
-        <h3>{{ student.risk_level|upper if student.risk_level else 'N/A' }}</h3>
-        <p>Risk Level</p>
-    </div>
-    
-    <div class="stat-card card-green">
-        <h3>{{ student.attendance_rate if student.attendance_rate else 'N/A' }}%</h3>
-        <p>Attendance Rate</p>
-    </div>
-</div>
+<!-- ── Detail grid ── -->
+<div class="detail-grid">
 
-<!-- Contact Info -->
-<div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-    <h3 style="color: #667eea; margin-bottom: 15px;">📞 Contact Information</h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-        <div>
-            <strong>Student:</strong><br>
-            📱 {{ student.phone or 'N/A' }}
-        </div>
-        <div>
-            <strong>Parent/Guardian:</strong><br>
-            {{ student.parent_name }}<br>
-            📱 {{ student.parent_phone }}<br>
-            📧 {{ student.parent_email or 'N/A' }}
-        </div>
-        <div>
-            <strong>Registration:</strong><br>
-            {{ student.registration_date }}<br>
-            Status: <span style="color: #28a745;">{{ student.status|upper }}</span>
-        </div>
-    </div>
-</div>
+  <!-- Contact -->
+  <div class="detail-section">
+    <h3>&#9993; Contact</h3>
+    <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ student.phone or '—' }}</span></div>
+    <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ student.email }}</span></div>
+    <div class="info-row"><span class="info-label">Registered</span><span class="info-value">{{ student.registration_date }}</span></div>
+  </div>
 
-<!-- Subject Performance -->
-<h3 style="color: #667eea; margin-bottom: 20px;">📚 Subject Performance</h3>
+  <!-- Parent -->
+  <div class="detail-section">
+    <h3>&#128106; Parent / Guardian</h3>
+    <div class="info-row"><span class="info-label">Name</span><span class="info-value">{{ student.parent_name or '—' }}</span></div>
+    <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ student.parent_phone or '—' }}</span></div>
+    <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ student.parent_email or '—' }}</span></div>
+  </div>
 
-{% if performance %}
-<table>
-    <thead>
-        <tr>
-            <th>Subject</th>
-            <th>Average</th>
-            <th>Latest Score</th>
-            <th>Trend</th>
-        </tr>
-    </thead>
-    <tbody>
+  <!-- Subject Performance -->
+  <div class="detail-section full">
+    <h3>&#128218; Subject Performance</h3>
+    {% if performance %}
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Average</th><th>Latest</th><th>Progress</th><th>Trend</th></tr></thead>
+      <tbody>
         {% for subject, data in performance.items() %}
         <tr>
-            <td><strong>{{ subject }}</strong></td>
-            <td>
-                <span style="font-size: 1.2em; font-weight: bold; 
-                      color: {% if data.average >= 70 %}#28a745{% elif data.average >= 50 %}#ffc107{% else %}#dc3545{% endif %};">
-                    {{ data.average }}%
-                </span>
-            </td>
-            <td>{{ data.latest }}%</td>
-            <td>
-                {% if data.trend == 'improving' %}
-                    <span class="badge badge-improving">📈 Improving</span>
-                {% elif data.trend == 'declining' %}
-                    <span class="badge badge-declining">📉 Declining</span>
-                {% else %}
-                    <span class="badge badge-stable">➡️ Stable</span>
-                {% endif %}
-            </td>
+          <td><strong>{{ subject }}</strong></td>
+          <td>
+            <span style="font-weight:700;font-size:1.05rem;
+              color:{% if data.average >= 70 %}#4ade80{% elif data.average >= 50 %}#fbbf24{% else %}#f87171{% endif %}">
+              {{ data.average }}%
+            </span>
+          </td>
+          <td style="color:var(--fg-muted)">{{ data.latest }}%</td>
+          <td style="width:140px">
+            <div class="score-bar-wrap">
+              <div class="score-bar-fill" style="width:{{ data.average }}%;background:{% if data.average >= 70 %}#4ade80{% elif data.average >= 50 %}#fbbf24{% else %}#f87171{% endif %}"></div>
+            </div>
+          </td>
+          <td>
+            {% if data.trend == 'improving' %}
+              <span style="color:#4ade80;font-size:.82rem;font-weight:600">&#8599; Improving</span>
+            {% elif data.trend == 'declining' %}
+              <span style="color:#f87171;font-size:.82rem;font-weight:600">&#8600; Declining</span>
+            {% else %}
+              <span style="color:var(--fg-muted);font-size:.82rem;font-weight:600">&#8594; Stable</span>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p style="color: #666; padding: 20px; background: #f8f9fa; border-radius: 10px;">No performance data yet</p>
-{% endif %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--fg-muted);padding:16px 0;margin:0">No performance data recorded yet.</p>
+    {% endif %}
+  </div>
 
-<!-- Recent Assessments -->
-<h3 style="color: #667eea; margin: 30px 0 20px 0;">📝 Recent Assessments</h3>
-
-{% if assessments %}
-<table>
-    <thead>
+  <!-- Recent Assessments -->
+  <div class="detail-section full">
+    <h3>&#128221; Recent Assessments</h3>
+    {% if assessments %}
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Subject</th><th>Type</th><th>Score</th><th>%</th></tr></thead>
+      <tbody>
+        {% for a in assessments %}
         <tr>
-            <th>Date</th>
-            <th>Subject</th>
-            <th>Type</th>
-            <th>Score</th>
-            <th>Percentage</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for assessment in assessments %}
-        <tr>
-            <td>{{ assessment.date }}</td>
-            <td>{{ assessment.subject }}</td>
-            <td>{{ assessment.type }}</td>
-            <td>{{ assessment.score }} / {{ assessment.max_score }}</td>
-            <td>
-                <strong style="color: {% if assessment.percentage >= 70 %}#28a745{% elif assessment.percentage >= 50 %}#ffc107{% else %}#dc3545{% endif %};">
-                    {{ assessment.percentage }}%
-                </strong>
-            </td>
+          <td style="color:var(--fg-muted)">{{ a.date }}</td>
+          <td>{{ a.subject }}</td>
+          <td><span style="font-size:.78rem;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);color:var(--fg-muted)">{{ a.type }}</span></td>
+          <td>{{ a.score }} / {{ a.max_score }}</td>
+          <td>
+            <span style="font-weight:700;
+              color:{% if a.percentage >= 70 %}#4ade80{% elif a.percentage >= 50 %}#fbbf24{% else %}#f87171{% endif %}">
+              {{ a.percentage }}%
+            </span>
+          </td>
         </tr>
         {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p style="color: #666; padding: 20px; background: #f8f9fa; border-radius: 10px;">No assessments recorded yet</p>
-{% endif %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--fg-muted);padding:16px 0;margin:0">No assessments recorded yet.</p>
+    {% endif %}
+  </div>
 
-<!-- Payment History -->
-<h3 style="color: #667eea; margin: 30px 0 20px 0;">💰 Payment History</h3>
-
-{% if payments %}
-<table>
-    <thead>
+  <!-- Payments -->
+  <div class="detail-section full">
+    <h3>&#128178; Payment History</h3>
+    {% if payments %}
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Month</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
         <tr>
-            <th>Payment Date</th>
-            <th>Month For</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Reference</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for payment in payments %}
-        <tr>
-            <td>{{ payment.payment_date }}</td>
-            <td>{{ payment.month_for }}</td>
-            <td style="color: #28a745; font-weight: bold;">R{{ payment.amount|round(2) }}</td>
-            <td>{{ payment.payment_method }}</td>
-            <td><small>{{ payment.reference or 'N/A' }}</small></td>
+          <td style="color:var(--fg-muted)">{{ p.payment_date }}</td>
+          <td>{{ p.month_for }}</td>
+          <td style="color:#4ade80;font-weight:700">R{{ p.amount|round(2) }}</td>
+          <td>{{ p.payment_method }}</td>
+          <td style="color:var(--fg-muted);font-size:.82rem">{{ p.reference or '—' }}</td>
         </tr>
         {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p style="color: #666; padding: 20px; background: #f8f9fa; border-radius: 10px;">No payment records yet</p>
-{% endif %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--fg-muted);padding:16px 0;margin:0">No payment records yet.</p>
+    {% endif %}
+  </div>
 
-<!-- Quick Actions -->
-<div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-    <h4 style="color: #667eea; margin-bottom: 15px;">🎯 Quick Actions</h4>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <button onclick="showRecordAssessment()" class="btn">📝 Record Assessment</button>
-        <button onclick="showRecordPayment()" class="btn">💰 Record Payment</button>
-        <a href="/attendance" class="btn">✅ Mark Attendance</a>
+  <!-- Quick Actions -->
+  <div class="detail-section full">
+    <h3>&#9889; Quick Actions</h3>
+    <div class="action-strip">
+      <button onclick="window.location.href='/assessments#record-form'" class="btn-action">Record Assessment</button>
+      <button onclick="window.location.href='/payments'" class="btn-action">Record Payment</button>
+      <a href="/attendance" class="btn-action">Mark Attendance</a>
+      <a href="/admin/timetable/{{ student.student_id }}" class="btn-action">Edit Timetable</a>
     </div>
+  </div>
+
 </div>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function showRecordAssessment() {
-    window.location.href = '/assessments#record-form';
-}
-
-function showRecordPayment() {
-    window.location.href = '/payments';
-}
-</script>
 {% endblock %}
