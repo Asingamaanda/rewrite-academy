@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Subject Content — Rewrite Academy{% endblock %}
+
+{% block content %}
+<div class="content-wrapper" style="padding:100px 0 60px;">
+<div style="max-width:1200px;margin:0 auto;padding:0 20px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px;">
+    <div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:2rem;color:#22d3ee;margin:0;">Subject Content Library</h1>
+      <p style="color:rgba(255,255,255,0.45);margin:4px 0 0;font-size:0.9rem;">Notes · Question Papers · Critical Work · Exam Prep — per subject</p>
+    </div>
+    <a href="/admin/manlib" style="background:rgba(34,211,238,0.08);color:#22d3ee;border:1px solid rgba(34,211,238,0.25);padding:8px 18px;border-radius:8px;text-decoration:none;font-size:0.85rem;">← Videos (Manlib)</a>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for cat, msg in messages %}
+    <div style="padding:12px 18px;border-radius:8px;margin-bottom:16px;
+                {% if cat=='error' %}background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;
+                {% else %}background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;{% endif %}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  <!-- ===== ADD CONTENT CARD ===== -->
+  <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;margin-bottom:36px;">
+    <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;color:rgba(255,255,255,0.85);margin:0 0 24px;">Add New Content</h2>
+    <form method="POST" action="/admin/subject-content/add" enctype="multipart/form-data">
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:14px;align-items:end;flex-wrap:wrap;">
+
+        <!-- Subject -->
+        <div>
+          <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Subject *</label>
+          <select name="subject" required style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;">
+            <option value="">— Choose —</option>
+            {% for s in subjects %}
+            <option value="{{ s }}" {% if request.args.get('subject')==s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Content Type -->
+        <div>
+          <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Content Type *</label>
+          <select name="content_type" required style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;">
+            <option value="">— Choose —</option>
+            {% for ct_key, ct_label in content_types %}
+            <option value="{{ ct_key }}" {% if request.args.get('content_type')==ct_key %}selected{% endif %}>{{ ct_label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Title -->
+        <div>
+          <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Title *</label>
+          <input type="text" name="title" placeholder="e.g. Differentiation Rules Summary" required
+            style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;">
+        </div>
+
+        <!-- Order -->
+        <div>
+          <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Order</label>
+          <input type="number" name="order_num" value="0" min="0" style="width:80px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;">
+        </div>
+
+      </div>
+
+      <!-- Description -->
+      <div style="margin-top:14px;">
+        <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Description / Notes (optional)</label>
+        <textarea name="description" rows="2" placeholder="Brief description or instructions for students…"
+          style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;resize:vertical;"></textarea>
+      </div>
+
+      <!-- Typed content -->
+      <div style="margin-top:14px;">
+        <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Typed Content (optional)</label>
+        <textarea name="content_text" rows="4" placeholder="Paste formatted notes, formulas, key points… (supports plain text / HTML snippets)"
+          style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;font-family:monospace;outline:none;resize:vertical;"></textarea>
+      </div>
+
+      <!-- File + URL row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;align-items:end;">
+        <div>
+          <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Upload File (PDF / DOCX / PPT / Image / Video)</label>
+          <input type="file" name="content_file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.mp4,.webm"
+            style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.85rem;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:0.78rem;color:rgba(255,255,255,0.5);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Or External Link URL</label>
+          <input type="url" name="link_url" placeholder="https://docs.google.com/…"
+            style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:10px 12px;font-size:0.9rem;outline:none;">
+        </div>
+      </div>
+
+      <button type="submit" style="margin-top:20px;background:linear-gradient(135deg,#0891b2,#22d3ee);color:#000;border:none;border-radius:8px;padding:11px 32px;font-weight:700;font-size:0.92rem;cursor:pointer;letter-spacing:.03em;">
+        + Add Content
+      </button>
+    </form>
+  </div>
+
+  <!-- ===== FILTER BAR ===== -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;align-items:center;">
+    <span style="color:rgba(255,255,255,0.4);font-size:0.82rem;text-transform:uppercase;letter-spacing:.05em;">Filter:</span>
+    <a href="/admin/subject-content" style="padding:5px 14px;border-radius:100px;font-size:0.8rem;text-decoration:none;
+      {% if not subject_filter and not type_filter %}background:rgba(34,211,238,0.18);color:#22d3ee;border:1px solid rgba(34,211,238,0.35);
+      {% else %}background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);{% endif %}">All</a>
+    {% for s in subjects %}
+    <a href="/admin/subject-content?subject={{ s }}" style="padding:5px 14px;border-radius:100px;font-size:0.8rem;text-decoration:none;
+      {% if subject_filter==s and not type_filter %}background:rgba(34,211,238,0.18);color:#22d3ee;border:1px solid rgba(34,211,238,0.35);
+      {% else %}background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);{% endif %}">{{ s }}</a>
+    {% endfor %}
+    {% for ct_key, ct_label in content_types %}
+    <a href="/admin/subject-content?content_type={{ ct_key }}" style="padding:5px 14px;border-radius:100px;font-size:0.8rem;text-decoration:none;
+      {% if type_filter==ct_key %}background:rgba(34,211,238,0.18);color:#22d3ee;border:1px solid rgba(34,211,238,0.35);
+      {% else %}background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.1);{% endif %}">{{ ct_label }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- ===== CONTENT LIBRARY ===== -->
+  {% if grouped %}
+    {% for subj, type_groups in grouped.items() %}
+    <div style="margin-bottom:36px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1.25rem;color:#22d3ee;margin:0 0 16px;padding-bottom:8px;border-bottom:1px solid rgba(34,211,238,0.2);">{{ subj }}</h3>
+
+      {% for ct_key, ct_label in content_types %}
+        {% if type_groups.get(ct_key) %}
+        <div style="margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.06);padding:3px 10px;border-radius:4px;">{{ ct_label }}</span>
+            <span style="font-size:0.75rem;color:rgba(255,255,255,0.28);">{{ type_groups[ct_key]|length }} item(s)</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+            {% for item in type_groups[ct_key] %}
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                <div style="font-weight:600;color:rgba(255,255,255,0.85);font-size:0.9rem;line-height:1.35;">{{ item.title }}</div>
+                <form method="POST" action="/admin/subject-content/delete/{{ item.id }}" style="margin:0;" onsubmit="return confirm('Delete this item?')">
+                  <button type="submit" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#f87171;border-radius:5px;padding:3px 9px;font-size:0.75rem;cursor:pointer;">✕</button>
+                </form>
+              </div>
+              {% if item.description %}
+              <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);">{{ item.description }}</div>
+              {% endif %}
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">
+                {% if item.content_text %}
+                <span style="font-size:0.72rem;background:rgba(34,211,238,0.08);color:#22d3ee;border-radius:4px;padding:2px 8px;">📝 Text</span>
+                {% endif %}
+                {% if item.file_path %}
+                <a href="/static/{{ item.file_path }}" target="_blank"
+                   style="font-size:0.72rem;background:rgba(34,211,238,0.08);color:#22d3ee;border-radius:4px;padding:2px 8px;text-decoration:none;">📎 File</a>
+                {% endif %}
+                {% if item.link_url %}
+                <a href="{{ item.link_url }}" target="_blank"
+                   style="font-size:0.72rem;background:rgba(34,211,238,0.08);color:#22d3ee;border-radius:4px;padding:2px 8px;text-decoration:none;">🔗 Link</a>
+                {% endif %}
+              </div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.22);margin-top:2px;">Added {{ item.created_at[:10] if item.created_at else '' }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.3);">
+    <div style="font-size:2.5rem;margin-bottom:12px;">📂</div>
+    <div style="font-size:1rem;">No content yet — add your first item above.</div>
+  </div>
+  {% endif %}
+
+</div>
+</div>
+{% endblock %}

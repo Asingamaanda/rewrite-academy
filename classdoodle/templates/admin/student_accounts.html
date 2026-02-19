@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Student Logins — ClassDoodle{% endblock %}
+
+{% block content %}
+<div style="padding:2rem 0;">
+
+    <!-- Header -->
+    <div class="glass-container" data-animate style="margin-bottom:2rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <h1 style="font-family:'Playfair Display',serif;font-size:1.8rem;margin-bottom:4px;">
+                    <span class="text-gold">Student Login</span> Accounts
+                </h1>
+                <p style="color:rgba(255,255,255,0.5);font-size:0.9rem;">Create login credentials for students to access their private portal</p>
+            </div>
+            <a href="/admin/manlib" class="btn-cinematic btn-outline">Manage Videos</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2" style="gap:2rem;align-items:start;">
+
+        <!-- Create / Update Account Form -->
+        <div class="glass-container" data-animate>
+            <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.5rem;color:#22d3ee;">
+                Create / Update Student Login
+            </h2>
+            <form method="POST" action="/admin/student-accounts/create">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.8rem;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,0.6);margin-bottom:6px;">Student ID</label>
+                    <select name="student_id" required style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-family:'Outfit',sans-serif;font-size:1rem;">
+                        <option value="">— Select student —</option>
+                        {% for student in students %}
+                        <option value="{{ student.student_id }}">{{ student.name }} ({{ student.student_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.8rem;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,0.6);margin-bottom:6px;">Password</label>
+                    <input type="text" name="password" placeholder="Set a password for this student" required
+                           style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-family:'Outfit',sans-serif;font-size:1rem;outline:none;">
+                    <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin-top:4px;">Share this password with the student. They use their student ID as their username.</p>
+                </div>
+                <button type="submit" class="btn-cinematic btn-gold" style="width:100%;">Create / Update Login</button>
+            </form>
+        </div>
+
+        <!-- Existing Accounts -->
+        <div class="glass-container" data-animate>
+            <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.5rem;color:#22d3ee;">
+                Active Student Accounts ({{ accounts|length }})
+            </h2>
+            {% if accounts %}
+            <div style="display:flex;flex-direction:column;gap:0.8rem;">
+                {% for student in students %}
+                {% if student.student_id in accounts %}
+                <div class="card-cinematic" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <div style="font-weight:600;font-size:0.95rem;">{{ student.name }}</div>
+                        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);">Username: <span style="color:#22d3ee;">{{ student.student_id }}</span></div>
+                        <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:2px;">
+                            Created: {{ accounts[student.student_id].created_at[:10] if accounts[student.student_id].created_at else 'N/A' }}
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <a href="/admin/timetable/{{ student.student_id }}" class="btn-cinematic btn-outline" style="padding:6px 12px;font-size:0.8rem;">Timetable</a>
+                        <form method="POST" action="/admin/student-accounts/delete/{{ student.student_id }}" style="display:inline;" onsubmit="return confirm('Remove login for {{ student.name }}?')">
+                            <button type="submit" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-family:'Outfit',sans-serif;">Remove</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:3rem;color:rgba(255,255,255,0.3);">
+                <div style="font-size:2.5rem;margin-bottom:1rem;">🔑</div>
+                <p>No student accounts yet. Create the first one using the form.</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Students without accounts -->
+    {% set no_account = students_no_account %}
+    {% if no_account %}
+    <div class="glass-container" data-animate style="margin-top:2rem;">
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:1rem;color:rgba(255,255,255,0.7);">
+            Students without portal access ({{ no_account|length }})
+        </h2>
+        <div class="grid grid-cols-4" style="gap:0.8rem;">
+            {% for student in no_account %}
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;">
+                <div style="font-size:0.9rem;font-weight:500;">{{ student.name }}</div>
+                <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);">{{ student.student_id }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

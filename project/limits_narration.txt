@@ -1,0 +1,63 @@
+Welcome to this lesson on limits, presented by Asi.
+
+Let's examine the function f of x equals x squared minus 1, divided by x minus 1.
+
+What happens when x approaches 1?
+
+If we substitute x equals 1 directly, we get 0 over 0, which is undefined. So we need a different approach.
+
+Let's factor the numerator.
+
+Notice that x minus 1 appears in both the numerator and denominator.
+
+We can cancel these terms, as long as x is not equal to 1.
+
+After cancellation, we're left with simply x plus 1.
+
+Now we can safely substitute x equals 1. One plus one equals 2.
+
+Therefore, the limit as x approaches 1 equals 2.
+
+This is the fundamental concept of limits.
+
+Let's visualize this concept with a graph to deepen our understanding.
+
+Here's the simplified function, f of x equals x plus 1.
+
+Notice there's a hole at x equals 1, because the original function was undefined there.
+
+But as we approach x equals 1 from either side, the function gets closer and closer to 2.
+
+Both paths lead to the value 2, which is our limit.
+
+Let's try one more example to solidify your understanding.
+
+Find the limit as x approaches 2 of x squared minus 4, divided by x minus 2.
+
+Try it yourself first!
+
+Let's solve it step by step.
+
+We factor the numerator as x minus 2, times x plus 2.
+
+Cancel x minus 2.
+
+We're left with x plus 2.
+
+Substitute x equals 2. Two plus two equals 4.
+
+Excellent! The limit equals 4.
+
+Let's review the key concepts about limits.
+
+Limits describe function behavior as x approaches a value.
+
+Direct substitution may give 0 over 0, which is undefined.
+
+Factor and simplify to remove the problem.
+
+The limit is the value the function approaches.
+
+Practice with many examples to master this!
+
+Keep practicing, and you'll master limits in no time. Thank you for learning with Asi!

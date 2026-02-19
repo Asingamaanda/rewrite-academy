@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}My Progress — {{ student.name }}{% endblock %}
+
+{% block content %}
+<div style="padding:2rem 0 110px;">
+
+    <!-- Header -->
+    <div class="glass-container" data-animate style="margin-bottom:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <a href="/my-portal" style="font-size:0.82rem;color:rgba(255,255,255,0.3);text-decoration:none;" onmouseover="this.style.color='#22d3ee'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">← My Portal</a>
+                <h1 style="font-family:'Playfair Display',serif;font-size:1.9rem;margin:6px 0 4px;">My <span class="text-gold">Progress Report</span></h1>
+                <p style="color:rgba(255,255,255,0.35);font-size:0.8rem;margin:0;">&#128274; Private — only visible to you and your teacher</p>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <a href="/my-portal/subjects" class="btn-cinematic btn-outline" style="font-size:0.82rem;padding:.7rem 1.3rem;">Subjects</a>
+                <a href="/my-portal/timetable" class="btn-cinematic btn-outline" style="font-size:0.82rem;padding:.7rem 1.3rem;">Timetable</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top 3 stats -->
+    <div class="grid grid-cols-3" style="gap:1.2rem;margin-bottom:1.5rem;">
+        {% set avg = student.overall_average %}
+        {% set att = student.attendance_rate %}
+        <div class="card-cinematic" style="text-align:center;padding:2rem;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.38);margin-bottom:12px;">Overall Average</div>
+            <div style="font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:700;{% if avg >= 70 %}color:#4ade80;{% elif avg >= 50 %}color:#22d3ee;{% else %}color:#f87171;{% endif %}line-height:1;">{{ avg }}%</div>
+            <div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fill" style="width:{{ avg }}%;background:{% if avg >= 70 %}#4ade80{% elif avg >= 50 %}#22d3ee{% else %}#f87171{% endif %};"></div></div>
+        </div>
+        <div class="card-cinematic" style="text-align:center;padding:2rem;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.38);margin-bottom:12px;">Attendance Rate</div>
+            <div style="font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:700;{% if att >= 80 %}color:#4ade80;{% elif att >= 60 %}color:#22d3ee;{% else %}color:#f87171;{% endif %}line-height:1;">{{ att }}%</div>
+            <div class="progress-bar-bg" style="margin-top:14px;"><div class="progress-bar-fill" style="width:{{ att }};background:{% if att >= 80 %}#4ade80{% elif att >= 60 %}#22d3ee{% else %}#f87171{% endif %};"></div></div>
+        </div>
+        <div class="card-cinematic" style="text-align:center;padding:2rem;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.38);margin-bottom:12px;">Academic Status</div>
+            <div style="font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;{% if student.risk_level == 'low' %}color:#4ade80;{% elif student.risk_level == 'medium' %}color:#22d3ee;{% else %}color:#f87171;{% endif %}line-height:1.1;margin-top:8px;">
+                {% if student.risk_level == 'low' %}On Track{% elif student.risk_level == 'medium' %}Needs Focus{% else %}Needs Help{% endif %}
+            </div>
+            <p style="font-size:0.78rem;color:rgba(255,255,255,0.35);margin-top:12px;">{{ student.subjects|length }} subject{{ 's' if student.subjects|length != 1 }}</p>
+        </div>
+    </div>
+
+    <!-- Per-subject performance with trends -->
+    {% if performance %}
+    <div class="glass-container" data-animate style="margin-bottom:1.5rem;">
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.5rem;">Performance <span class="text-gold">by Subject</span></h2>
+        <div class="grid grid-cols-2" style="gap:1.1rem;">
+            {% for subject, data in performance.items() %}
+            {% set sc = '#4ade80' if data.average >= 70 else ('#22d3ee' if data.average >= 50 else '#f87171') %}
+            <div class="card-cinematic" style="padding:1.3rem 1.5rem;border-left:3px solid {{ sc }};">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div>
+                        <div style="font-weight:600;font-size:0.95rem;">{{ subject }}</div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+                            <span style="font-size:0.75rem;color:rgba(255,255,255,0.35);">Latest: {{ data.latest|round(1) if data.latest else '—' }}%</span>
+                            {% if data.trend == 'improving' %}<span style="color:#4ade80;font-size:0.78rem;font-weight:700;">&#8679; Improving</span>
+                            {% elif data.trend == 'declining' %}<span style="color:#f87171;font-size:0.78rem;font-weight:700;">&#8681; Declining</span>
+                            {% else %}<span style="color:rgba(255,255,255,0.25);font-size:0.78rem;">&#8594; Stable</span>{% endif %}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:{{ sc }};line-height:1;">{{ data.average|round(1) }}%</div>
+                        <div style="font-size:0.7rem;color:rgba(255,255,255,0.28);margin-top:2px;">{{ data.count }} assessment{{ 's' if (data.count or 0) != 1 }}</div>
+                    </div>
+                </div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:{{ data.average }}%;background:{{ sc }};"></div></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assessment history table -->
+    {% if assessments %}
+    <div class="glass-container" data-animate style="margin-bottom:1.5rem;">
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.5rem;">Assessment <span class="text-gold">History</span></h2>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                        <th style="text-align:left;padding:8px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.35);font-weight:500;">Date</th>
+                        <th style="text-align:left;padding:8px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.35);font-weight:500;">Subject</th>
+                        <th style="text-align:left;padding:8px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.35);font-weight:500;">Type</th>
+                        <th style="text-align:right;padding:8px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.35);font-weight:500;">Score</th>
+                        <th style="text-align:right;padding:8px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.35);font-weight:500;">%</th>
+                        <th style="padding:8px 14px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assessments %}
+                    {% set pc = '#4ade80' if a.percentage >= 70 else ('#22d3ee' if a.percentage >= 50 else '#f87171') %}
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.025)'" onmouseout="this.style.background=''">
+                        <td style="padding:11px 14px;color:rgba(255,255,255,0.4);font-size:0.83rem;">{{ a.date }}</td>
+                        <td style="padding:11px 14px;font-size:0.9rem;font-weight:500;">{{ a.subject }}</td>
+                        <td style="padding:11px 14px;font-size:0.84rem;color:rgba(255,255,255,0.55);">{{ a.type }}</td>
+                        <td style="padding:11px 14px;text-align:right;font-size:0.88rem;color:rgba(255,255,255,0.6);">{{ a.score }}/{{ a.max_score }}</td>
+                        <td style="padding:11px 14px;text-align:right;font-weight:700;font-size:0.95rem;color:{{ pc }};">{{ a.percentage }}%</td>
+                        <td style="padding:11px 6px;">
+                            <div style="width:50px;height:4px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;"><div style="width:{{ a.percentage }}%;height:100%;background:{{ pc }};border-radius:4px;"></div></div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attendance history -->
+    {% if attendance %}
+    <div class="glass-container" data-animate>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.5rem;">Recent <span class="text-gold">Attendance</span></h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            {% for record in attendance %}
+            <div style="background:{% if record.status == 'present' %}rgba(74,222,128,0.07){% else %}rgba(248,113,113,0.07){% endif %};border:1px solid {% if record.status == 'present' %}rgba(74,222,128,0.25){% else %}rgba(248,113,113,0.25){% endif %};border-radius:10px;padding:9px 14px;font-size:0.82rem;">
+                <div style="font-weight:500;">{{ record.date }}</div>
+                <div style="font-size:0.74rem;color:rgba(255,255,255,0.4);margin-top:1px;">{{ record.subject }}</div>
+                <div style="font-size:0.72rem;margin-top:3px;font-weight:600;{% if record.status == 'present' %}color:#4ade80;{% else %}color:#f87171;{% endif %}">{{ record.status | capitalize }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Fixed Bottom Nav -->
+<div style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;">
+    <div style="background:rgba(10,10,10,0.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:6px;display:flex;gap:4px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+        <a href="/my-portal" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">⊡</span>Home</a>
+        <a href="/my-portal/subjects" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">📚</span>Subjects</a>
+        <a href="/my-portal/timetable" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">◫</span>Schedule</a>
+        <a href="/my-portal/progress" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;background:rgba(34,211,238,0.15);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;"><span style="font-size:1rem;">◈</span>Progress</a>
+    </div>
+</div>
+{% endblock %}

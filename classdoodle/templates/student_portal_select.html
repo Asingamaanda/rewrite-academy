@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Student Portal - Rewrite Academy{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto">
+    
+    <!-- Header -->
+    <div class="text-center mb-12 animate-slide-in">
+        <div class="w-20 h-20 bg-academy-blue rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+            </svg>
+        </div>
+        <h1 class="text-4xl font-bold text-academy-dark mb-3">Student Portal</h1>
+        <p class="text-gray-600 text-lg">Select your name to view your dashboard</p>
+    </div>
+
+    <!-- Student Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for student in students %}
+        <a href="/portal/{{ student.student_id }}" class="bg-white rounded-xl p-6 border-2 border-academy-border hover:border-academy-blue transition-all duration-200 card-hover group">
+            <div class="flex items-center space-x-4">
+                <!-- Avatar -->
+                <div class="w-14 h-14 bg-gradient-to-br from-academy-blue to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-white text-xl font-bold">{{ student.name[0] }}</span>
+                </div>
+                
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-semibold text-academy-dark group-hover:text-academy-blue transition-colors">
+                        {{ student.name }}
+                    </h3>
+                    <p class="text-sm text-gray-500 truncate">{{ student.student_id }}</p>
+                    
+                    <!-- Average Badge -->
+                    {% if student.overall_average %}
+                    <div class="mt-2 inline-flex items-center">
+                        <span class="text-xs font-medium px-2 py-1 rounded-full 
+                            {% if student.overall_average >= 70 %}bg-green-100 text-green-700{% elif student.overall_average >= 50 %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">
+                            {{ student.overall_average }}% avg
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Arrow Icon -->
+                <svg class="w-5 h-5 text-gray-400 group-hover:text-academy-blue group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Admin Link -->
+    <div class="mt-12 text-center pb-8">
+        <a href="/" class="text-sm text-gray-500 hover:text-academy-blue transition-colors inline-flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Teacher Dashboard
+        </a>
+    </div>
+    
+</div>
+
+{% endblock %}

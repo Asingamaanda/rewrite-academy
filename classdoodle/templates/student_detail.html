@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.name }} - ClassDoodle{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+    <a href="/students" style="color: #667eea; text-decoration: none;">← Back to All Students</a>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <div>
+        <h2 style="color: #667eea; margin: 0;">{{ student.name }}</h2>
+        <p style="color: #999; font-size: 1.1em; margin: 5px 0 0 0;">{{ student.student_id }} | {{ student.email }}</p>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="stat-cards" style="margin-bottom: 40px;">
+    <div class="stat-card card-blue">
+        <h3>{{ student.subjects|length }}</h3>
+        <p>Subjects Enrolled</p>
+    </div>
+    
+    <div class="stat-card card-purple">
+        <h3>{{ student.overall_average if student.overall_average else 'N/A' }}%</h3>
+        <p>Overall Average</p>
+    </div>
+    
+    <div class="stat-card {% if student.risk_level == 'high' %}card-red{% elif student.risk_level == 'medium' %}card-yellow{% else %}card-green{% endif %}">
+        <h3>{{ student.risk_level|upper if student.risk_level else 'N/A' }}</h3>
+        <p>Risk Level</p>
+    </div>
+    
+    <div class="stat-card card-green">
+        <h3>{{ student.attendance_rate if student.attendance_rate else 'N/A' }}%</h3>
+        <p>Attendance Rate</p>
+    </div>
+</div>
+
+<!-- Contact Info -->
+<div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+    <h3 style="color: #667eea; margin-bottom: 15px;">📞 Contact Information</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+        <div>
+            <strong>Student:</strong><br>
+            📱 {{ student.phone or 'N/A' }}
+        </div>
+        <div>
+            <strong>Parent/Guardian:</strong><br>
+            {{ student.parent_name }}<br>
+            📱 {{ student.parent_phone }}<br>
+            📧 {{ student.parent_email or 'N/A' }}
+        </div>
+        <div>
+            <strong>Registration:</strong><br>
+            {{ student.registration_date }}<br>
+            Status: <span style="color: #28a745;">{{ student.status|upper }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Performance -->
+<h3 style="color: #667eea; margin-bottom: 20px;">📚 Subject Performance</h3>
+
+{% if performance %}
+<table>
+    <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Average</th>
+            <th>Latest Score</th>
+            <th>Trend</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for subject, data in performance.items() %}
+        <tr>
+            <td><strong>{{ subject }}</strong></td>
+            <td>
+                <span style="font-size: 1.2em; font-weight: bold; 
+                      color: {% if data.average >= 70 %}#28a745{% elif data.average >= 50 %}#ffc107{% else %}#dc3545{% endif %};">
+                    {{ data.average }}%
+                </span>
+            </td>
+            <td>{{ data.latest }}%</td>
+            <td>
+                {% if data.trend == 'improving' %}
+                    <span class="badge badge-improving">📈 Improving</span>
+                {% elif data.trend == 'declining' %}
+                    <span class="badge badge-declining">📉 Declining</span>
+                {% else %}
+                    <span class="badge badge-stable">➡️ Stable</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color: #666; padding: 20px; background: #f8f9fa; border-radius: 10px;">No performance data yet</p>
+{% endif %}
+
+<!-- Recent Assessments -->
+<h3 style="color: #667eea; margin: 30px 0 20px 0;">📝 Recent Assessments</h3>
+
+{% if assessments %}
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Subject</th>
+            <th>Type</th>
+            <th>Score</th>
+            <th>Percentage</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for assessment in assessments %}
+        <tr>
+            <td>{{ assessment.date }}</td>
+            <td>{{ assessment.subject }}</td>
+            <td>{{ assessment.type }}</td>
+            <td>{{ assessment.score }} / {{ assessment.max_score }}</td>
+            <td>
+                <strong style="color: {% if assessment.percentage >= 70 %}#28a745{% elif assessment.percentage >= 50 %}#ffc107{% else %}#dc3545{% endif %};">
+                    {{ assessment.percentage }}%
+                </strong>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color: #666; padding: 20px; background: #f8f9fa; border-radius: 10px;">No assessments recorded yet</p>
+{% endif %}
+
+<!-- Payment History -->
+<h3 style="color: #667eea; margin: 30px 0 20px 0;">💰 Payment History</h3>
+
+{% if payments %}
+<table>
+    <thead>
+        <tr>
+            <th>Payment Date</th>
+            <th>Month For</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Reference</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for payment in payments %}
+        <tr>
+            <td>{{ payment.payment_date }}</td>
+            <td>{{ payment.month_for }}</td>
+            <td style="color: #28a745; font-weight: bold;">R{{ payment.amount|round(2) }}</td>
+            <td>{{ payment.payment_method }}</td>
+            <td><small>{{ payment.reference or 'N/A' }}</small></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color: #666; padding: 20px; background: #f8f9fa; border-radius: 10px;">No payment records yet</p>
+{% endif %}
+
+<!-- Quick Actions -->
+<div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+    <h4 style="color: #667eea; margin-bottom: 15px;">🎯 Quick Actions</h4>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button onclick="showRecordAssessment()" class="btn">📝 Record Assessment</button>
+        <button onclick="showRecordPayment()" class="btn">💰 Record Payment</button>
+        <a href="/attendance" class="btn">✅ Mark Attendance</a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showRecordAssessment() {
+    window.location.href = '/assessments#record-form';
+}
+
+function showRecordPayment() {
+    window.location.href = '/payments';
+}
+</script>
+{% endblock %}

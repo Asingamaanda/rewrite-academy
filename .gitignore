@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Database & data files (contain student data — never commit)
+*.db
+*.sqlite
+*.sqlite3
+classdoodle/data/
+classdoodle/backend/__pycache__/
+
+# Flask session / secrets
+instance/
+*.secret
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Generated media (Manim output — large files)
+media/
+project/media/
+
+# Uploads (user-uploaded files)
+classdoodle/static/uploads/
+
+# Logs
+*.log
+flask_out.txt
+flask_err.txt
+
+# Large media / generated video
+*.mp4
+*.mp3
+*.wav
+project/media/
+media/

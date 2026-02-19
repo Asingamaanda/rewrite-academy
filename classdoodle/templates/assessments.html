@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Assessments - ClassDoodle{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 30px;">📝 Assessments</h2>
+
+<!-- Class Performance Summary -->
+<div class="stat-cards">
+    <div class="stat-card card-purple">
+        <h3>{{ class_summary.class_average }}%</h3>
+        <p>Class Average</p>
+    </div>
+    
+    <div class="stat-card card-green">
+        <h3>{{ class_summary.risk_breakdown.get('low', 0) }}</h3>
+        <p>On Track Students</p>
+    </div>
+    
+    <div class="stat-card card-yellow">
+        <h3>{{ class_summary.risk_breakdown.get('medium', 0) }}</h3>
+        <p>Medium Risk</p>
+    </div>
+    
+    <div class="stat-card card-red">
+        <h3>{{ class_summary.risk_breakdown.get('high', 0) }}</h3>
+        <p>High Risk</p>
+    </div>
+</div>
+
+<!-- Filter by Subject -->
+<form method="GET" action="/assessments" style="margin: 30px 0;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <label style="font-weight: 600;">Filter by Subject:</label>
+        <select name="subject" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; flex: 1; max-width: 300px;">
+            <option value="">All Subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject }}" {% if subject_filter == subject %}selected{% endif %}>{{ subject }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn">Filter</button>
+        <a href="/assessments" class="btn" style="background: #6c757d;">Clear</a>
+    </div>
+</form>
+
+<!-- Recent Assessments -->
+<h3 style="color: #667eea; margin: 30px 0 20px 0;">Recent Assessments</h3>
+
+{% if assessments %}
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Subject</th>
+            <th>Type</th>
+            <th>Score</th>
+            <th>Percentage</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for assessment in assessments %}
+        <tr>
+            <td>{{ assessment.date }}</td>
+            <td>
+                <strong>{{ assessment.student_id }}</strong><br>
+                <small>{{ assessment.student_name }}</small>
+            </td>
+            <td>{{ assessment.subject }}</td>
+            <td>{{ assessment.type }}</td>
+            <td>{{ assessment.score }} / {{ assessment.max_score }}</td>
+            <td>
+                <strong style="color: {% if assessment.percentage >= 70 %}#28a745{% elif assessment.percentage >= 50 %}#ffc107{% else %}#dc3545{% endif %};">
+                    {{ assessment.percentage }}%
+                </strong>
+            </td>
+            <td>
+                <a href="/student/{{ assessment.student_id }}" class="btn" style="padding: 8px 15px; font-size: 0.9em;">View Student</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 10px;">
+    <h3 style="color: #666;">No assessments recorded yet</h3>
+    <p style="color: #999;">Record your first assessment below</p>
+</div>
+{% endif %}
+
+<!-- Quick Record Form -->
+<div style="margin-top: 40px; padding: 25px; background: #f8f9fa; border-radius: 10px;">
+    <h3 style="color: #667eea; margin-bottom: 20px;">➕ Record New Assessment</h3>
+    
+    <form method="POST" action="/assessment/add">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Student ID *</label>
+                <input type="text" name="student_id" required placeholder="CD001" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Subject *</label>
+                <select name="subject" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                    <option value="">Select Subject</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject }}">{{ subject }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Assessment Type *</label>
+                <select name="assessment_type" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                    <option value="">Select Type</option>
+                    <option value="Weekly Test">Weekly Test</option>
+                    <option value="Monthly Test">Monthly Test</option>
+                    <option value="Trial Exam">Trial Exam</option>
+                    <option value="Final Exam">Final Exam</option>
+                    <option value="Assignment">Assignment</option>
+                    <option value="Class Work">Class Work</option>
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Score *</label>
+                <input type="number" name="score" required min="0" step="0.5" placeholder="75" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Max Score</label>
+                <input type="number" name="max_score" value="100" min="1" step="0.5" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Date</label>
+                <input type="date" name="date" value="{{ today }}" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600;">Notes (optional)</label>
+            <input type="text" name="notes" placeholder="Any notes about this assessment" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+        </div>
+        
+        <button type="submit" class="btn btn-success" style="margin-top: 20px; width: 100%;">✅ Record Assessment</button>
+    </form>
+</div>
+
+{% endblock %}

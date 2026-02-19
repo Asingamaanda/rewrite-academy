@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}My Videos — {{ student.name }}{% endblock %}
+
+{% block content %}
+<div style="padding:2rem 0 110px;">
+
+    <!-- Header -->
+    <div class="glass-container" data-animate style="margin-bottom:2rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <a href="/my-portal" style="font-size:0.82rem;color:rgba(255,255,255,0.3);text-decoration:none;" onmouseover="this.style.color='#22d3ee'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">← My Portal</a>
+                <h1 style="font-family:'Playfair Display',serif;font-size:1.9rem;margin:6px 0 4px;"><span class="text-gold">Manlib</span> Videos</h1>
+                <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;margin:0;">{{ student.subjects | join(' · ') }}</p>
+            </div>
+            {% set total = namespace(n=0) %}
+            {% if grouped %}{% for s, vids in grouped.items() %}{% set total.n = total.n + vids|length %}{% endfor %}{% endif %}
+            <div style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);border-radius:12px;padding:14px 24px;text-align:center;">
+                <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:#22d3ee;line-height:1;">{{ total.n }}</div>
+                <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;">Videos Available</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject tabs -->
+    {% if grouped %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.8rem;" id="subject-tabs">
+        <button onclick="filterSubject('all')" id="tab-all" style="padding:8px 20px;border-radius:100px;border:1px solid rgba(34,211,238,0.4);background:rgba(34,211,238,0.12);color:#22d3ee;font-family:'Outfit',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all .2s;">All Subjects</button>
+        {% for subject in grouped.keys() %}
+        <button onclick="filterSubject('{{ subject|replace(' ','_') }}')" id="tab-{{ subject|replace(' ','_')|replace('(','')|replace(')','') }}" style="padding:8px 20px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);font-family:'Outfit',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='rgba(34,211,238,0.3)';this.style.color='rgba(255,255,255,0.9)'" onmouseout="if(this.id!==activeTab){this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.5)'}">{{ subject }}</button>
+        {% endfor %}
+    </div>
+
+    {% for subject, videos in grouped.items() %}
+    <div class="glass-container subject-section" data-subject="{{ subject|replace(' ','_')|replace('(','')|replace(')','') }}" data-animate style="margin-bottom:2rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;color:#22d3ee;margin:0;">{{ subject }}</h2>
+            <span style="font-family:'Outfit',sans-serif;font-size:0.78rem;color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:3px 14px;">{{ videos|length }} video{{ 's' if videos|length != 1 }}</span>
+        </div>
+        <div class="grid grid-cols-2" style="gap:1.5rem;">
+            {% for video in videos %}
+            <div class="card-cinematic" style="overflow:hidden;padding:0;">
+                <div style="position:relative;background:#000;border-radius:12px 12px 0 0;overflow:hidden;">
+                    {% if video.video_type == 'youtube' and video.video_url %}
+                    <div style="position:relative;padding-bottom:56.25%;height:0;">
+                        <iframe src="{{ video.video_url }}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                    </div>
+                    {% elif video.video_type == 'upload' and video.file_path %}
+                    <video controls style="width:100%;display:block;max-height:220px;background:#000;">
+                        <source src="/static/{{ video.file_path }}" type="video/mp4">
+                    </video>
+                    {% else %}
+                    <div style="background:rgba(26,26,26,0.8);height:150px;display:flex;align-items:center;justify-content:center;border-radius:12px 12px 0 0;">
+                        <span style="font-size:2.5rem;opacity:.35;">&#9654;</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div style="padding:14px 16px;">
+                    <h3 style="font-size:0.94rem;font-weight:600;margin-bottom:4px;line-height:1.3;">{{ video.title }}</h3>
+                    {% if video.description %}<p style="font-size:0.8rem;color:rgba(255,255,255,0.45);line-height:1.4;margin-bottom:8px;">{{ video.description }}</p>{% endif %}
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        {% if video.duration %}<span style="font-size:0.72rem;color:rgba(255,255,255,0.28);">&#9203; {{ video.duration }}</span>{% endif %}
+                        <span style="font-size:0.72rem;color:rgba(255,255,255,0.22);">Added {{ video.created_at[:10] }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="glass-container" style="text-align:center;padding:5rem 2rem;" data-animate>
+        <div style="font-size:3.5rem;margin-bottom:1.5rem;opacity:.5;">&#9654;</div>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:rgba(255,255,255,0.5);margin-bottom:.8rem;">No Videos Yet</h2>
+        <p style="color:rgba(255,255,255,0.3);max-width:400px;margin:auto;line-height:1.6;">Your teacher is preparing Manlib videos for your subjects.<br>Check back soon!</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+let activeTab = 'tab-all';
+function filterSubject(key) {
+    document.querySelectorAll('.subject-section').forEach(el => {
+        el.style.display = (key === 'all' || el.dataset.subject === key) ? '' : 'none';
+    });
+    // Reset all tabs
+    document.querySelectorAll('#subject-tabs button').forEach(btn => {
+        btn.style.background = 'transparent';
+        btn.style.color = 'rgba(255,255,255,0.5)';
+        btn.style.borderColor = 'rgba(255,255,255,0.1)';
+    });
+    const tab = document.getElementById('tab-' + (key === 'all' ? 'all' : key));
+    if (tab) {
+        activeTab = tab.id;
+        tab.style.background = 'rgba(34,211,238,0.12)';
+        tab.style.color = '#22d3ee';
+        tab.style.borderColor = 'rgba(34,211,238,0.4)';
+    }
+}
+</script>
+
+<!-- Fixed Bottom Nav -->
+<div style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;">
+    <div style="background:rgba(10,10,10,0.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:6px;display:flex;gap:4px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+        <a href="/my-portal" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">⊡</span>Home</a>
+        <a href="/my-portal/subjects" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">📚</span>Subjects</a>
+        <a href="/my-portal/timetable" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">◫</span>Schedule</a>
+        <a href="/my-portal/progress" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">◈</span>Progress</a>
+    </div>
+</div>
+{% endblock %}

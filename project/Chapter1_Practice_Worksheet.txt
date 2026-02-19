@@ -1,0 +1,221 @@
+# GRADE 9 MATHEMATICS - CHAPTER 1 PRACTICE WORKSHEET
+# WHOLE NUMBERS
+
+**Student Name:** ____________________    **Date:** __________    **Class:** ______
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 1: TYPES OF NUMBERS (10 marks)
+
+### Question 1: Number Classification (5 marks)
+Classify each number by marking (✓) all categories it belongs to:
+
+| Number | Natural | Whole | Integer | Rational | Irrational |
+|--------|---------|-------|---------|----------|------------|
+| 7      |         |       |         |          |            |
+| 0      |         |       |         |          |            |
+| -15    |         |       |         |          |            |
+| 3/4    |         |       |         |          |            |
+| √5     |         |       |         |          |            |
+
+### Question 2: Properties (5 marks)
+State whether each operation is CLOSED for the given number system:
+
+a) Natural numbers under subtraction: ____________
+b) Whole numbers under addition: ____________
+c) Integers under multiplication: ____________
+d) Rational numbers under division (excluding ÷0): ____________
+e) What is the identity element for multiplication? ____________
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 2: ESTIMATION AND ROUNDING (15 marks)
+
+### Question 3: Rounding (6 marks)
+Round to the nearest ten and to the nearest hundred:
+
+a) 347      Nearest 10: ______    Nearest 100: ______
+b) 1,856    Nearest 10: ______    Nearest 100: ______
+c) 923      Nearest 10: ______    Nearest 100: ______
+
+### Question 4: Estimation (9 marks)
+Estimate by rounding to the nearest hundred, then calculate the exact answer:
+
+a) 487 + 312
+   Estimate: ____________
+   Exact answer: ____________
+
+b) 1,843 - 678
+   Estimate: ____________
+   Exact answer: ____________
+
+c) 96 × 52
+   Estimate: ____________
+   Exact answer: ____________
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 3: COLUMN ARITHMETIC (20 marks)
+
+### Question 5: Addition (5 marks)
+Calculate using column addition:
+
+a) 4,567 + 2,849 = ____________
+
+b) 12,345 + 8,976 = ____________
+
+
+### Question 6: Subtraction (5 marks)
+Calculate using column subtraction:
+
+a) 8,543 - 3,786 = ____________
+
+b) 15,000 - 6,847 = ____________
+
+
+### Question 7: Multiplication (5 marks)
+Calculate using column multiplication:
+
+a) 456 × 23 = ____________
+
+b) 789 × 45 = ____________
+
+
+### Question 8: Long Division (5 marks)
+Calculate using long division:
+
+a) 2,436 ÷ 12 = ____________
+
+b) 5,670 ÷ 27 = ____________ remainder ____________
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 4: MULTIPLES AND FACTORS (20 marks)
+
+### Question 9: Multiples (6 marks)
+
+a) List the first 6 multiples of 8:
+   _____, _____, _____, _____, _____, _____
+
+b) List the first 6 multiples of 12:
+   _____, _____, _____, _____, _____, _____
+
+c) What is the LCM of 8 and 12? ____________
+
+
+### Question 10: Factors (7 marks)
+
+a) List all factors of 24:
+   _________________________________________________
+
+b) List all factors of 36:
+   _________________________________________________
+
+c) What is the HCF of 24 and 36? ____________
+
+
+### Question 11: Prime Factorization (7 marks)
+
+a) Write 60 as a product of prime factors:
+   60 = ____________
+
+b) Write 84 as a product of prime factors:
+   84 = ____________
+
+c) Using prime factorization, find the HCF of 60 and 84:
+   HCF = ____________
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 5: RATIO AND PROPORTION (20 marks)
+
+### Question 12: Simple Ratios (8 marks)
+
+a) Express the ratio of 15 to 25 in simplest form:
+   ____________
+
+b) If a mixture uses flour and sugar in the ratio 5:2, how much sugar 
+   is needed for 400g of flour?
+   
+   Answer: ____________
+
+c) Three friends share R450 in the ratio 2:3:4. How much does each 
+   person get?
+   
+   First person: R______
+   Second person: R______
+   Third person: R______
+
+
+### Question 13: Rate Problems (6 marks)
+
+a) A car travels 270 km in 3 hours. What is the average speed?
+   
+   Speed = ____________ km/h
+
+b) If water flows from a tap at 15 litres per minute, how much water 
+   flows in 8 minutes?
+   
+   Answer: ____________ litres
+
+
+### Question 14: Proportion (6 marks)
+
+If 5 pens cost R35, what is the cost of:
+
+a) 1 pen? R______
+
+b) 8 pens? R______
+
+c) 12 pens? R______
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 6: WORD PROBLEMS (15 marks)
+
+### Question 15: Shopping (5 marks)
+A shirt costs R180. During a sale, it is reduced by 25%.
+
+a) What is the discount amount? R____________
+
+b) What is the sale price? R____________
+
+
+### Question 16: Simple Interest (5 marks)
+Calculate the simple interest on R2,000 invested at 6% per year for 
+3 years.
+
+Formula: I = (P × R × T) / 100
+
+Interest = R____________
+
+
+### Question 17: Mixed Problem (5 marks)
+A school orders 45 desks at R320 each and 45 chairs at R180 each.
+
+a) Estimate the total cost (round to nearest hundred):
+   Estimate: R____________
+
+b) Calculate the exact total cost:
+   Exact total: R____________
+
+═══════════════════════════════════════════════════════════════════════
+
+## TOTAL: ______ / 100
+
+═══════════════════════════════════════════════════════════════════════
+
+## REFLECTION
+What did you find most challenging in this chapter?
+
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+What area do you feel most confident about?
+
+_____________________________________________________________________
+
+_____________________________________________________________________
+
+═══════════════════════════════════════════════════════════════════════

@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}My Subjects — {{ student.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ——— Subject tab bar ——— */
+  .subj-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; }
+  .subj-tab  { padding:10px 24px; border-radius:100px; font-size:0.88rem; font-weight:600;
+               letter-spacing:.04em; cursor:pointer; border:1px solid rgba(255,255,255,0.1);
+               background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.5);
+               transition:all .2s; user-select:none; }
+  .subj-tab:hover             { border-color:rgba(34,211,238,0.4); color:rgba(255,255,255,0.85); }
+  .subj-tab.active            { background:rgba(34,211,238,0.15); border-color:rgba(34,211,238,0.5);
+                                color:#22d3ee; }
+  /* ——— Content-type sub-tabs ——— */
+  .ct-tabs          { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:22px; 
+                      border-bottom:1px solid rgba(255,255,255,0.07); padding-bottom:12px; }
+  .ct-tab           { padding:7px 18px; border-radius:8px; font-size:0.8rem; font-weight:600;
+                      cursor:pointer; border:1px solid transparent; color:rgba(255,255,255,0.38);
+                      background:transparent; transition:all .2s; user-select:none; }
+  .ct-tab:hover     { color:rgba(255,255,255,0.75); background:rgba(255,255,255,0.05); }
+  .ct-tab.active    { background:rgba(34,211,238,0.12); border-color:rgba(34,211,238,0.3); color:#22d3ee; }
+  .ct-tab .badge    { display:inline-block; min-width:18px; height:18px; line-height:18px;
+                      border-radius:9px; background:rgba(34,211,238,0.25); color:#22d3ee;
+                      font-size:0.68rem; font-weight:700; text-align:center; padding:0 5px;
+                      margin-left:6px; }
+  /* ——— Content panels ——— */
+  .ct-panel { display:none; }
+  .ct-panel.active { display:block; }
+  /* ——— Video card ——— */
+  .video-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+                border-radius:12px; overflow:hidden; margin-bottom:16px; }
+  .video-card-body { padding:14px 18px; }
+  .video-card iframe, .video-card video { display:block; width:100%; border:0; }
+  /* ——— Content card ——— */
+  .content-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+                  border-radius:12px; padding:18px 20px; margin-bottom:14px; 
+                  border-left:3px solid #0891b2; }
+  .content-card .ct-title  { font-size:0.98rem; font-weight:700; color:rgba(255,255,255,0.88); margin-bottom:6px; }
+  .content-card .ct-desc   { font-size:0.82rem; color:rgba(255,255,255,0.45); margin-bottom:10px; line-height:1.5; }
+  .content-card .ct-text   { font-size:0.84rem; color:rgba(255,255,255,0.65); 
+                              background:rgba(0,0,0,0.3); border-radius:7px; padding:12px 14px;
+                              margin-bottom:10px; line-height:1.6; white-space:pre-wrap; font-family:inherit; }
+  .content-card .ct-links  { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .content-card .ct-link   { font-size:0.78rem; font-weight:600; padding:5px 14px; border-radius:6px;
+                              background:rgba(34,211,238,0.1); border:1px solid rgba(34,211,238,0.25);
+                              color:#22d3ee; text-decoration:none; transition:background .2s; }
+  .content-card .ct-link:hover { background:rgba(34,211,238,0.2); }
+  /* ——— Empty state ——— */
+  .empty-state { text-align:center; padding:50px 20px; color:rgba(255,255,255,0.25); }
+  .empty-state .empty-icon { font-size:2.2rem; margin-bottom:10px; }
+  .empty-state .empty-msg  { font-size:0.88rem; }
+  /* ——— Bottom nav ——— */
+  .bottom-nav { position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+                display:flex; gap:4px; background:rgba(14,14,14,0.88); 
+                backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.1);
+                border-radius:100px; padding:6px; z-index:1000; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper" style="padding:90px 0 100px;">
+<div style="max-width:1100px;margin:0 auto;padding:0 20px;">
+
+  <!-- Page header -->
+  <div style="margin-bottom:26px;">
+    <a href="/my-portal" style="font-size:0.82rem;color:rgba(255,255,255,0.3);text-decoration:none;"
+       onmouseover="this.style.color='#22d3ee'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">← My Portal</a>
+    <h1 style="font-family:'Playfair Display',serif;font-size:1.85rem;color:#22d3ee;margin:10px 0 4px;">My Subjects</h1>
+    <p style="color:rgba(255,255,255,0.35);font-size:0.85rem;margin:0;">
+      {{ student.name }} &nbsp;·&nbsp; {{ today }}
+    </p>
+  </div>
+
+  <!-- ===== SUBJECT TAB BAR ===== -->
+  <div class="subj-tabs" id="subjTabBar">
+    {% for subj in subjects %}
+    <div class="subj-tab {% if loop.first %}active{% endif %}"
+         onclick="switchSubject('{{ subj | replace("'", "\\'") }}', this)">
+      {{ subj }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ===== SUBJECT PANELS ===== -->
+  {% for subj in subjects %}
+  <div id="subj-panel-{{ subj | replace(' ','_') }}"
+       class="subj-panel"
+       style="display:{% if loop.first %}block{% else %}none{% endif %};">
+
+    <!-- Content-type sub-tab bar -->
+    <div class="ct-tabs" id="ct-tabs-{{ subj | replace(' ','_') }}">
+      {% for ct_key, ct_data in content_labels.items() %}
+      {% set ct_label = ct_data[0] %}
+      {% set ct_icon  = ct_data[1] %}
+      {% set count    = hub[subj][ct_key]|length %}
+      <div class="ct-tab {% if loop.first %}active{% endif %}"
+           onclick="switchContentType('{{ subj | replace(' ','_') }}', '{{ ct_key }}', this)">
+        {{ ct_icon }}&nbsp;{{ ct_label }}
+        {% if count > 0 %}
+        <span class="badge">{{ count }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Content panels within subject -->
+    {% for ct_key, ct_data in content_labels.items() %}
+    <div id="ct-panel-{{ subj | replace(' ','_') }}-{{ ct_key }}"
+         class="ct-panel {% if loop.first %}active{% endif %}">
+
+      {% set items = hub[subj][ct_key] %}
+
+      {% if items %}
+
+        {% if ct_key == 'videos' %}
+        <!-- VIDEO CARDS -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px;">
+          {% for v in items %}
+          <div class="video-card">
+            {% if v.video_type == 'youtube' and v.video_url %}
+            <iframe src="{{ v.video_url }}" height="215" allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"></iframe>
+            {% elif v.file_path %}
+            <video src="/static/{{ v.file_path }}" controls height="215"
+                   style="background:#000;"></video>
+            {% endif %}
+            <div class="video-card-body">
+              <div style="font-weight:700;color:rgba(255,255,255,0.88);font-size:0.93rem;margin-bottom:4px;">{{ v.title }}</div>
+              {% if v.description %}
+              <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);">{{ v.description }}</div>
+              {% endif %}
+              {% if v.duration %}
+              <div style="font-size:0.73rem;color:rgba(255,255,255,0.28);margin-top:6px;">⏱ {{ v.duration }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% else %}
+        <!-- CONTENT CARDS (notes / question_paper / critical_work / exam_prep) -->
+        {% for item in items %}
+        <div class="content-card">
+          <div class="ct-title">{{ item.title }}</div>
+          {% if item.description %}
+          <div class="ct-desc">{{ item.description }}</div>
+          {% endif %}
+          {% if item.content_text %}
+          <div class="ct-text">{{ item.content_text }}</div>
+          {% endif %}
+          <div class="ct-links">
+            {% if item.file_path %}
+            <a href="/static/{{ item.file_path }}" target="_blank" class="ct-link">📎 Download File</a>
+            {% endif %}
+            {% if item.link_url %}
+            <a href="{{ item.link_url }}" target="_blank" class="ct-link">🔗 Open Link</a>
+            {% endif %}
+          </div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:10px;">Added {{ item.created_at[:10] if item.created_at else '' }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+      {% else %}
+      <!-- EMPTY STATE -->
+      <div class="empty-state">
+        <div class="empty-icon">
+          {% if ct_key == 'videos' %}🎬
+          {% elif ct_key == 'notes' %}📝
+          {% elif ct_key == 'question_paper' %}📋
+          {% elif ct_key == 'critical_work' %}⚡
+          {% else %}🎯{% endif %}
+        </div>
+        <div class="empty-msg">No {{ ct_data[0] | lower }} added yet for {{ subj }}.</div>
+        <div style="font-size:0.78rem;margin-top:6px;color:rgba(255,255,255,0.18);">Your teacher will add content here.</div>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+  </div><!-- /subj-panel -->
+  {% endfor %}
+
+</div>
+</div>
+
+<!-- ===== FLOATING BOTTOM NAV ===== -->
+<div class="bottom-nav">
+  <a href="/my-portal" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">⊡</span>Home</a>
+  <a href="/my-portal/subjects" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;background:rgba(34,211,238,0.15);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;"><span style="font-size:1rem;">📚</span>Subjects</a>
+  <a href="/my-portal/timetable" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">◫</span>Schedule</a>
+  <a href="/my-portal/progress" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">◈</span>Progress</a>
+</div>
+
+<script>
+function switchSubject(subjectName, clickedTab) {
+  // Hide all subject panels
+  document.querySelectorAll('.subj-panel').forEach(p => p.style.display = 'none');
+  // Remove active from all subject tabs
+  document.querySelectorAll('.subj-tab').forEach(t => t.classList.remove('active'));
+  // Show selected
+  const panelId = 'subj-panel-' + subjectName.replace(/ /g, '_');
+  const panel = document.getElementById(panelId);
+  if (panel) panel.style.display = 'block';
+  clickedTab.classList.add('active');
+}
+
+function switchContentType(subjKey, ctKey, clickedTab) {
+  // Hide all ct panels for this subject
+  document.querySelectorAll('[id^="ct-panel-' + subjKey + '-"]').forEach(p => p.classList.remove('active'));
+  // Remove active from all ct tabs in this subject
+  document.querySelectorAll('#ct-tabs-' + subjKey + ' .ct-tab').forEach(t => t.classList.remove('active'));
+  // Show selected
+  const panelId = 'ct-panel-' + subjKey + '-' + ctKey;
+  const panel = document.getElementById(panelId);
+  if (panel) panel.classList.add('active');
+  clickedTab.classList.add('active');
+}
+</script>
+{% endblock %}

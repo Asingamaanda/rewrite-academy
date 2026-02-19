@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Rewrite Academy{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ─────────────────────────────────────────
+           DESIGN TOKENS
+        ───────────────────────────────────────── */
+        :root {
+            --bg:           #06080f;
+            --bg-surface:   #0c0f1e;
+            --bg-elevated:  #111527;
+            --border:       rgba(34,211,238,0.12);
+            --border-hover: rgba(34,211,238,0.32);
+            --accent:       #22d3ee;
+            --accent-dark:  #0891b2;
+            --accent-glow:  rgba(34,211,238,0.18);
+            --text:         #f0f4ff;
+            --text-muted:   rgba(240,244,255,0.55);
+            --text-faint:   rgba(240,244,255,0.28);
+            --success:      #10b981;
+            --danger:       #ef4444;
+            --warning:      #f59e0b;
+            --sidebar-w:    248px;
+            --radius-sm:    8px;
+            --radius-md:    12px;
+            --radius-lg:    18px;
+            --shadow-card:  0 4px 24px rgba(0,0,0,0.45);
+            --shadow-glow:  0 0 24px rgba(34,211,238,0.12);
+        }
+
+        /* ─────────────────────────────────────────
+           RESET & BASE
+        ───────────────────────────────────────── */
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Background atmosphere */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 0%,   rgba(8,145,178,0.10) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 90% 100%, rgba(34,211,238,0.07) 0%, transparent 55%),
+                radial-gradient(ellipse 100% 80% at 50% 50%, #080c18 0%, #06080f 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ─────────────────────────────────────────
+           LAYOUT SHELL
+        ───────────────────────────────────────── */
+        .app-shell {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ─────────────────────────────────────────
+           ADMIN SIDEBAR
+        ───────────────────────────────────────── */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-w);
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 900;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.2); border-radius: 2px; }
+
+        /* Brand */
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 22px 20px 18px;
+            border-bottom: 1px solid var(--border);
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-weight: 900; font-size: 1.15rem;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.2;
+        }
+
+        .sidebar-brand-sub {
+            font-size: 0.68rem;
+            color: var(--text-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* Nav sections */
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 0;
+        }
+
+        .sidebar-section {
+            padding: 16px 20px 4px;
+        }
+
+        .sidebar-section-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--text-faint);
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.18s ease;
+            position: relative;
+        }
+
+        .sidebar-link:hover {
+            color: var(--text);
+            background: rgba(34,211,238,0.05);
+            border-left-color: rgba(34,211,238,0.3);
+        }
+
+        .sidebar-link.active {
+            color: var(--accent);
+            background: rgba(34,211,238,0.07);
+            border-left-color: var(--accent);
+            font-weight: 600;
+        }
+
+        .sidebar-icon {
+            width: 18px; height: 18px;
+            opacity: 0.75;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem;
+        }
+
+        .sidebar-link.active .sidebar-icon { opacity: 1; }
+
+        /* Sidebar footer */
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-avatar {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700;
+            color: #000;
+        }
+
+        .sidebar-username {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .sidebar-role {
+            font-size: 0.68rem;
+            color: var(--text-faint);
+        }
+
+        .sidebar-logout {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: var(--radius-sm);
+            color: #fca5a5;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            transition: all 0.18s ease;
+        }
+
+        .sidebar-logout:hover {
+            background: rgba(239,68,68,0.18);
+            border-color: rgba(239,68,68,0.5);
+            color: #fecaca;
+        }
+
+        /* ─────────────────────────────────────────
+           STUDENT TOP BAR
+        ───────────────────────────────────────── */
+        .nav-cinematic {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 900;
+            background: rgba(6,8,15,0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            height: 64px;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none;
+        }
+
+        .nav-logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-weight: 900; font-size: 1.1rem;
+            color: #000;
+        }
+
+        .nav-brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex; gap: 1.5rem;
+            list-style: none; align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover { color: var(--accent); }
+        .nav-link.active { color: var(--accent); font-weight: 600; }
+
+        /* ─────────────────────────────────────────
+           CONTENT AREA
+        ───────────────────────────────────────── */
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        /* Admin: offset for sidebar */
+        .has-sidebar .content-wrapper {
+            margin-left: var(--sidebar-w);
+        }
+
+        .main-content {
+            padding: 2rem 2rem 4rem;
+            max-width: 1280px;
+        }
+
+        /* Admin content starts below top (none, sidebar handles it) */
+        .has-sidebar .main-content {
+            margin-top: 0;
+            padding-top: 2.5rem;
+        }
+
+        /* Student content starts below top nav, centered */
+        .has-topnav .main-content {
+            margin-top: 64px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Public / no-role pages: no nav offset */
+        .no-nav {
+            margin-top: 0 !important;
+            padding-top: 2rem;
+        }
+
+        /* ─────────────────────────────────────────
+           CARDS & CONTAINERS
+        ───────────────────────────────────────── */
+        .glass-container {
+            background: rgba(12,15,30,0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .glass-container:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+        }
+
+        .card-cinematic {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            transition: all 0.22s ease;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-cinematic::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(34,211,238,0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .card-cinematic:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+        }
+
+        .card-cinematic:hover::before {
+            opacity: 1;
+        }
+
+        /* Left-accent variant */
+        .card-accent-left {
+            border-left: 3px solid var(--accent);
+        }
+
+        /* ─────────────────────────────────────────
+           TYPOGRAPHY
+        ───────────────────────────────────────── */
+        h1, h2, h3, h4, h5 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .text-gold {
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            color: var(--text);
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        /* ─────────────────────────────────────────
+           BUTTONS
+        ───────────────────────────────────────── */
+        .btn-cinematic,
+        .btn-gold,
+        .btn-outline,
+        .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.6rem 1.25rem;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-gold, .btn-cinematic {
+            background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+            color: #000;
+            box-shadow: 0 3px 12px rgba(34,211,238,0.2);
+        }
+
+        .btn-gold:hover, .btn-cinematic:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(34,211,238,0.35);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1.5px solid rgba(34,211,238,0.4);
+        }
+
+        .btn-outline:hover {
+            background: rgba(34,211,238,0.07);
+            border-color: var(--accent);
+        }
+
+        .btn-danger {
+            background: rgba(239,68,68,0.12);
+            color: #fca5a5;
+            border: 1.5px solid rgba(239,68,68,0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239,68,68,0.22);
+            border-color: rgba(239,68,68,0.55);
+        }
+
+        /* ─────────────────────────────────────────
+           DATA TABLES
+        ───────────────────────────────────────── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-faint);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table td {
+            padding: 12px 14px;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(34,211,238,0.06);
+            vertical-align: middle;
+        }
+
+        .data-table tr:hover td {
+            background: rgba(34,211,238,0.03);
+            color: var(--text);
+        }
+
+        .data-table tr:last-child td { border-bottom: none; }
+
+        /* ─────────────────────────────────────────
+           FORM ELEMENTS
+        ───────────────────────────────────────── */
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, background 0.2s;
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: rgba(34,211,238,0.45);
+            background: rgba(34,211,238,0.03);
+        }
+
+        select option { background: var(--bg-elevated); color: var(--text); }
+
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-group { margin-bottom: 1.2rem; }
+
+        /* ─────────────────────────────────────────
+           PROGRESS BARS
+        ───────────────────────────────────────── */
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+            border-radius: 10px;
+            transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 0 8px rgba(34,211,238,0.3);
+        }
+
+        /* ─────────────────────────────────────────
+           BADGES / TAGS
+        ───────────────────────────────────────── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 9px;
+            border-radius: 100px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .badge-cyan  { background: rgba(34,211,238,0.12); color: var(--accent); }
+        .badge-green { background: rgba(16,185,129,0.12); color: #34d399; }
+        .badge-red   { background: rgba(239,68,68,0.12);  color: #fca5a5; }
+        .badge-amber { background: rgba(245,158,11,0.12); color: #fbbf24; }
+
+        /* ─────────────────────────────────────────
+           FLASH MESSAGES
+        ───────────────────────────────────────── */
+        .flash-messages {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .flash-message {
+            background: var(--bg-elevated);
+            backdrop-filter: blur(20px);
+            border-left: 4px solid;
+            border-radius: var(--radius-md);
+            padding: 0.9rem 1.25rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1);
+            font-size: 0.875rem;
+        }
+
+        .flash-success { border-color: var(--success); background: rgba(16,185,129,0.08); color: #6ee7b7; }
+        .flash-error   { border-color: var(--danger);  background: rgba(239,68,68,0.08);  color: #fca5a5; }
+        .flash-info    { border-color: var(--accent);  background: rgba(34,211,238,0.08); color: var(--accent); }
+
+        @keyframes slideIn {
+            from { transform: translateX(110%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
+        }
+
+        /* ─────────────────────────────────────────
+           SCROLL ANIMATIONS
+        ───────────────────────────────────────── */
+        [data-animate] {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        [data-animate].visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ─────────────────────────────────────────
+           GRID SYSTEM
+        ───────────────────────────────────────── */
+        .grid { display: grid; gap: 1.5rem; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+        @media (max-width: 1100px) {
+            .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 640px) {
+            .grid-cols-2,
+            .grid-cols-3,
+            .grid-cols-4 { grid-template-columns: 1fr; }
+        }
+
+        /* ─────────────────────────────────────────
+           UTILITY
+        ───────────────────────────────────────── */
+        .text-center  { text-align: center; }
+        .text-right   { text-align: right; }
+        .text-muted   { color: var(--text-muted); }
+        .text-faint   { color: var(--text-faint); }
+        .text-success { color: #34d399; }
+        .text-danger  { color: #fca5a5; }
+        .text-warning { color: #fbbf24; }
+        .flex { display: flex; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .flex-center  { display: flex; justify-content: center; align-items: center; }
+        .gap-1 { gap: 0.5rem; } .gap-2 { gap: 1rem; } .gap-3 { gap: 1.5rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 2rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mt-4 { margin-top: 2rem; }
+        .w-full { width: 100%; }
+
+        /* ─────────────────────────────────────────
+           RESPONSIVE SIDEBAR
+        ───────────────────────────────────────── */
+        @media (max-width: 900px) {
+            :root { --sidebar-w: 56px; }
+
+            .sidebar-brand-name,
+            .sidebar-brand-sub,
+            .sidebar-section-label,
+            .sidebar-link span,
+            .sidebar-username,
+            .sidebar-role,
+            .sidebar-logout { display: none; }
+
+            .sidebar-link { padding: 10px; justify-content: center; border-left: none; }
+            .sidebar-link:hover { border-left: none; border-radius: 6px; margin: 0 4px; }
+            .sidebar-link.active { border-left: none; border-radius: 6px; margin: 0 4px; }
+            .sidebar-icon { width: 20px; height: 20px; font-size: 1.1rem; }
+            .sidebar-user { justify-content: center; }
+            .sidebar-brand { justify-content: center; }
+            .sidebar-footer { padding: 12px 8px; }
+            .sidebar { overflow: visible; }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{%- set _role = session.get('user_role', '') -%}
+<div class="app-shell{% if _role == 'admin' %} has-sidebar{% elif _role == 'student' %} has-topnav{% endif %}">
+
+    {# ── ADMIN SIDEBAR ───────────────────────────────────────────── #}
+    {% if _role == 'admin' %}
+    <aside class="sidebar">
+        <a href="/" class="sidebar-brand">
+            <div class="sidebar-logo">R</div>
+            <div>
+                <div class="sidebar-brand-name">Rewrite Academy</div>
+                <div class="sidebar-brand-sub">Admin Portal</div>
+            </div>
+        </a>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-section"><div class="sidebar-section-label">Overview</div></div>
+            <a href="/" class="sidebar-link {% if request.path == '/' %}active{% endif %}">
+                <span class="sidebar-icon">⊞</span><span>Dashboard</span>
+            </a>
+
+            <div class="sidebar-section"><div class="sidebar-section-label">Students</div></div>
+            <a href="/students" class="sidebar-link {% if '/students' in request.path and 'accounts' not in request.path %}active{% endif %}">
+                <span class="sidebar-icon">👤</span><span>All Students</span>
+            </a>
+            <a href="/attendance" class="sidebar-link {% if '/attendance' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">✓</span><span>Attendance</span>
+            </a>
+
+            <div class="sidebar-section"><div class="sidebar-section-label">Academics</div></div>
+            <a href="/assessments" class="sidebar-link {% if '/assessments' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">📋</span><span>Assessments</span>
+            </a>
+            <a href="/admin/subject-content" class="sidebar-link {% if '/subject-content' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">📚</span><span>Subject Content</span>
+            </a>
+            <a href="/admin/manlib" class="sidebar-link {% if '/manlib' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">🎬</span><span>Video Library</span>
+            </a>
+
+            <div class="sidebar-section"><div class="sidebar-section-label">Management</div></div>
+            <a href="/payments" class="sidebar-link {% if '/payments' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">💳</span><span>Payments</span>
+            </a>
+            <a href="/admin/student-accounts" class="sidebar-link {% if '/student-accounts' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">🔑</span><span>Student Logins</span>
+            </a>
+            <a href="/portal" class="sidebar-link {% if request.path == '/portal' %}active{% endif %}">
+                <span class="sidebar-icon">↗</span><span>Portal View</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">T</div>
+                <div>
+                    <div class="sidebar-username">Teacher</div>
+                    <div class="sidebar-role">Administrator</div>
+                </div>
+            </div>
+            <a href="/logout" class="sidebar-logout">Sign Out</a>
+        </div>
+    </aside>
+    {% endif %}
+
+    {# ── STUDENT TOP NAV ─────────────────────────────────────────── #}
+    {% if _role == 'student' %}
+    <nav class="nav-cinematic">
+        <div class="nav-container">
+            <a href="/my-portal" class="nav-logo">
+                <div class="nav-logo-icon">R</div>
+                <span class="nav-brand">Rewrite Academy</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/my-portal"          class="nav-link {% if request.path == '/my-portal' %}active{% endif %}">Home</a></li>
+                <li><a href="/my-portal/subjects"  class="nav-link {% if '/subjects'  in request.path %}active{% endif %}">Subjects</a></li>
+                <li><a href="/my-portal/timetable" class="nav-link {% if '/timetable' in request.path %}active{% endif %}">Timetable</a></li>
+                <li><a href="/my-portal/progress"  class="nav-link {% if '/progress'  in request.path %}active{% endif %}">Progress</a></li>
+            </ul>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="color:var(--text-muted);font-size:0.82rem;">{{ session.get('username','') }}</span>
+                <a href="/logout" style="background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.25);padding:5px 12px;border-radius:6px;text-decoration:none;font-size:0.8rem;font-weight:600;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">Logout</a>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {# ── FLASH MESSAGES ──────────────────────────────────────────── #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    {# ── MAIN CONTENT (single block) ─────────────────────────────── #}
+    <div class="content-wrapper">
+        <main class="main-content{% if _role == '' %} no-nav{% endif %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+</div>
+
+    <script>
+        // Scroll animations
+        const animated = document.querySelectorAll('[data-animate]');
+        if (animated.length) {
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.08 });
+            animated.forEach(el => observer.observe(el));
+        }
+
+        // Auto-dismiss flash messages after 5s
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateX(110%)';
+                setTimeout(() => msg.remove(), 400);
+            });
+        }, 5000);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

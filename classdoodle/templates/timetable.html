@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Timetable - ClassDoodle{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 30px;">📅 Weekly Timetable</h2>
+<p style="color: #666; margin-bottom: 20px;">7:00 AM - 1:00 PM Daily Schedule</p>
+
+<div style="margin-bottom: 30px;">
+    <h3 style="color: #667eea; margin-bottom: 15px;">📚 Subject Distribution</h3>
+    <div class="stat-cards">
+        {% for subject, details in subjects.items() %}
+        <div class="stat-card card-purple">
+            <h3>{{ details.periods_per_week }}</h3>
+            <p>{{ subject }}</p>
+            <small style="opacity: 0.8;">periods/week</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% for day, classes in weekly_schedule.items() %}
+<div style="margin-bottom: 30px;">
+    <h3 style="color: #667eea; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
+        {{ day }}
+    </h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Subject/Activity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>07:00 - 07:50</td>
+                <td>📚 {{ classes[0] }}</td>
+            </tr>
+            <tr>
+                <td>07:50 - 08:40</td>
+                <td>📚 {{ classes[1] }}</td>
+            </tr>
+            <tr style="background: #fffbea;">
+                <td>08:40 - 09:00</td>
+                <td>☕ TEA BREAK</td>
+            </tr>
+            <tr>
+                <td>09:00 - 09:50</td>
+                <td>📚 {{ classes[2] }}</td>
+            </tr>
+            <tr>
+                <td>09:50 - 10:40</td>
+                <td>📚 {{ classes[3] }}</td>
+            </tr>
+            <tr>
+                <td>10:40 - 11:30</td>
+                <td>📚 {{ classes[4] }}</td>
+            </tr>
+            <tr>
+                <td>11:30 - 12:20</td>
+                <td>📚 {{ classes[5] }}</td>
+            </tr>
+            <tr style="background: #f0fff4;">
+                <td>12:20 - 13:00</td>
+                <td>🎯 {{ classes[6] }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+<div style="padding: 20px; background: #e7f3ff; border-radius: 10px; margin-top: 30px;">
+    <h4 style="color: #667eea; margin-bottom: 15px;">ℹ️ Schedule Info</h4>
+    <ul style="color: #666; line-height: 2;">
+        <li><strong>Teaching Hours:</strong> 5 hours 20 minutes per day</li>
+        <li><strong>Break Time:</strong> 20 minutes</li>
+        <li><strong>Wrap-up/Review:</strong> 40 minutes</li>
+        <li><strong>Total Contact Time:</strong> 6 hours daily</li>
+    </ul>
+</div>
+{% endblock %}

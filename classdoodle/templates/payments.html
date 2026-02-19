@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Payments - ClassDoodle{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 30px;">💰 Payment Management</h2>
+
+<!-- Revenue Summary -->
+<div class="stat-cards">
+    <div class="stat-card card-green">
+        <h3>R{{ payment_status.total_revenue|default(0, true)|round(2)|format_number }}</h3>
+        <p>Revenue This Month</p>
+    </div>
+    
+    <div class="stat-card card-blue">
+        <h3>{{ payment_status.paid_count }}</h3>
+        <p>Paid Students</p>
+    </div>
+    
+    <div class="stat-card card-red">
+        <h3>{{ payment_status.outstanding_count }}</h3>
+        <p>Outstanding Payments</p>
+    </div>
+    
+    <div class="stat-card card-yellow">
+        <h3>R{{ (payment_status.outstanding_count * 1500)|format_number }}</h3>
+        <p>Expected Outstanding</p>
+    </div>
+</div>
+
+<!-- Month Selector -->
+<form method="GET" action="/payments" style="margin: 30px 0;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <label style="font-weight: 600;">Select Month:</label>
+        <input type="month" name="month" value="{{ selected_month }}" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+        <button type="submit" class="btn">View</button>
+    </div>
+</form>
+
+<!-- Outstanding Payments -->
+{% if payment_status.outstanding %}
+<div style="margin: 30px 0;">
+    <h3 style="color: #dc3545; margin-bottom: 20px;">⚠️ Outstanding Payments ({{ payment_status.outstanding_count }})</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Parent Contact</th>
+                <th>Amount Due</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in payment_status.outstanding %}
+            <tr>
+                <td><strong>{{ student.student_id }}</strong></td>
+                <td>{{ student.name }}</td>
+                <td>
+                    {{ student.parent_name }}<br>
+                    <small style="color: #666;">{{ student.parent_phone }}</small>
+                </td>
+                <td style="color: #dc3545; font-weight: bold;">R1,500.00</td>
+                <td>
+                    <button onclick="recordPayment('{{ student.student_id }}', '{{ student.name }}')" class="btn btn-success" style="padding: 8px 15px; font-size: 0.9em;">
+                        💳 Record Payment
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Paid Students -->
+{% if payment_status.paid %}
+<div style="margin: 30px 0;">
+    <h3 style="color: #28a745; margin-bottom: 20px;">✅ Paid Students ({{ payment_status.paid_count }})</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Amount</th>
+                <th>Payment Date</th>
+                <th>Method</th>
+                <th>Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in payment_status.paid %}
+            <tr>
+                <td><strong>{{ item.student.student_id }}</strong></td>
+                <td>{{ item.student.name }}</td>
+                <td style="color: #28a745; font-weight: bold;">R{{ item.payment.amount|round(2) }}</td>
+                <td>{{ item.payment.payment_date }}</td>
+                <td>{{ item.payment.payment_method }}</td>
+                <td><small>{{ item.payment.reference or 'N/A' }}</small></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Overall Revenue Summary -->
+{% if revenue_summary and revenue_summary.get('total_revenue') %}
+<div style="margin: 30px 0;">
+    <h3 style="color: #667eea; margin-bottom: 20px;">📈 Overall Revenue Summary</h3>
+    
+    <div class="stat-cards">
+        <div class="stat-card card-green">
+            <h3>R{{ revenue_summary.total_revenue|round(2)|format_number }}</h3>
+            <p>Total Revenue (All Time)</p>
+        </div>
+        
+        <div class="stat-card card-blue">
+            <h3>{{ revenue_summary.payment_count }}</h3>
+            <p>Total Payments Received</p>
+        </div>
+        
+        <div class="stat-card card-purple">
+            <h3>R{{ revenue_summary.avg_payment|round(2)|format_number }}</h3>
+            <p>Average Payment</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Record Payment Modal (Hidden Form) -->
+<div id="paymentModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+        <h3 style="color: #667eea; margin-bottom: 20px;">💳 Record Payment</h3>
+        
+        <form id="paymentForm" method="POST" action="/payment/record">
+            <input type="hidden" name="student_id" id="payment_student_id">
+            <input type="hidden" name="month_for" value="{{ selected_month }}">
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Student</label>
+                <input type="text" id="payment_student_name" readonly style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; background: #f8f9fa;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Amount (R)</label>
+                <input type="number" name="amount" value="1500" step="0.01" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Payment Method</label>
+                <select name="payment_method" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                    <option>Cash</option>
+                    <option>EFT</option>
+                    <option>Card</option>
+                    <option>Mobile Money</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Reference (optional)</label>
+                <input type="text" name="reference" placeholder="Transaction ID or reference number" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <button type="submit" class="btn btn-success" style="flex: 1;">✅ Confirm Payment</button>
+                <button type="button" onclick="closePaymentModal()" class="btn" style="flex: 1; background: #6c757d;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function recordPayment(studentId, studentName) {
+    document.getElementById('payment_student_id').value = studentId;
+    document.getElementById('payment_student_name').value = studentName;
+    document.getElementById('paymentModal').style.display = 'flex';
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+}
+
+// Close modal on outside click
+document.getElementById('paymentModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePaymentModal();
+    }
+});
+</script>
+
+{% endblock %}

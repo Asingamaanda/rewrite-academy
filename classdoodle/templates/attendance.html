@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance - ClassDoodle{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 20px;">✅ Mark Attendance</h2>
+
+<!-- Date Selector -->
+<form method="GET" action="/attendance" style="margin-bottom: 30px;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <label style="font-weight: 600;">Date:</label>
+        <input type="date" name="date" value="{{ selected_date }}" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+        <button type="submit" class="btn">Load Attendance</button>
+        <a href="/attendance" class="btn" style="background: #6c757d;">Today</a>
+    </div>
+</form>
+
+<!-- Attendance Summary for Selected Date -->
+{% if attendance_report.by_subject %}
+<div class="stat-cards" style="margin-bottom: 30px;">
+    <div class="stat-card card-blue">
+        <h3>{{ attendance_report.total }} students</h3>
+        <p>Total Registered</p>
+    </div>
+    <div class="stat-card card-green">
+        <h3>{{ attendance_report.present }}</h3>
+        <p>Present Today</p>
+    </div>
+    <div class="stat-card card-red">
+        <h3>{{ attendance_report.absent }}</h3>
+        <p>Absent Today</p>
+    </div>
+    <div class="stat-card card-purple">
+        <h3>{{ ((attendance_report.present / attendance_report.total * 100) if attendance_report.total > 0 else 0)|round(1) }}%</h3>
+        <p>Attendance Rate</p>
+    </div>
+</div>
+{% endif %}
+
+{% if schedule %}
+    {% for item in schedule %}
+        {% if item.type == 'period' %}
+        <div style="margin-bottom: 30px; padding: 25px; background: #f8f9fa; border-radius: 10px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">
+                {{ item.time }} - {{ item.subject }}
+            </h3>
+            
+            <form method="POST" action="/attendance/mark">
+                <input type="hidden" name="date" value="{{ selected_date }}">
+                <input type="hidden" name="time_slot" value="{{ item.time }}">
+                <input type="hidden" name="subject" value="{{ item.subject }}">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    {% for student in students %}
+                    <label style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 5px; cursor: pointer;">
+                        <input type="checkbox" name="present[]" value="{{ student.student_id }}" style="margin-right: 10px; width: 18px; height: 18px;">
+                        <span><strong>{{ student.student_id }}</strong> - {{ student.name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                
+                <div style="display: flex; gap: 15px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">
+                        ✅ Mark Attendance for {{ item.subject }}
+                    </button>
+                    <button type="button" onclick="selectAll(this)" class="btn" style="background: #17a2b8;">
+                        Select All
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    {% endfor %}
+{% else %}
+    <div style="padding: 30px; text-align: center; background: #f8f9fa; border-radius: 10px;">
+        <h3 style="color: #667eea;">No classes scheduled for this day</h3>
+        <p style="color: #666; margin-top: 10px;">Select a weekday to mark attendance 📅</p>
+    </div>
+{% endif %}
+
+<div style="margin-top: 30px; padding: 20px; background: #e7f3ff; border-radius: 10px;">
+    <h4 style="color: #667eea; margin-bottom: 15px;">💡 Quick Tip</h4>
+    <p style="color: #666;">
+        Check the boxes for students who are <strong>present</strong> in each class. 
+        Unchecked students are automatically marked as absent.
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectAll(button) {
+    const form = button.closest('form');
+    const checkboxes = form.querySelectorAll('input[name="present[]"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    button.textContent = allChecked ? 'Select All' : 'Deselect All';
+}
+</script>
+{% endblock %}

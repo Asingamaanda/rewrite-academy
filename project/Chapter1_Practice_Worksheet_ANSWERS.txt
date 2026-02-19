@@ -1,0 +1,232 @@
+# GRADE 9 MATHEMATICS - CHAPTER 1 PRACTICE WORKSHEET
+# ANSWER KEY
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 1: TYPES OF NUMBERS (10 marks)
+
+### Question 1: Number Classification (5 marks - 1 mark each)
+
+| Number | Natural | Whole | Integer | Rational | Irrational |
+|--------|---------|-------|---------|----------|------------|
+| 7      |    ✓    |   ✓   |    ✓    |    ✓     |            |
+| 0      |         |   ✓   |    ✓    |    ✓     |            |
+| -15    |         |       |    ✓    |    ✓     |            |
+| 3/4    |         |       |         |    ✓     |            |
+| √5     |         |       |         |          |     ✓      |
+
+### Question 2: Properties (5 marks - 1 mark each)
+
+a) NO / NOT CLOSED
+b) YES / CLOSED
+c) YES / CLOSED
+d) YES / CLOSED
+e) 1 (one)
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 2: ESTIMATION AND ROUNDING (15 marks)
+
+### Question 3: Rounding (6 marks - 1 mark each)
+
+a) 347      Nearest 10: 350      Nearest 100: 300
+b) 1,856    Nearest 10: 1,860    Nearest 100: 1,900
+c) 923      Nearest 10: 920      Nearest 100: 900
+
+### Question 4: Estimation (9 marks - 3 marks each)
+
+a) 487 + 312
+   Estimate: 800 (500 + 300)
+   Exact answer: 799
+
+b) 1,843 - 678
+   Estimate: 1,100 or 1,200 (1,800 - 700)
+   Exact answer: 1,165
+
+c) 96 × 52
+   Estimate: 5,000 (100 × 50)
+   Exact answer: 4,992
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 3: COLUMN ARITHMETIC (20 marks)
+
+### Question 5: Addition (5 marks - 2.5 marks each)
+
+a) 4,567 + 2,849 = 7,416
+
+b) 12,345 + 8,976 = 21,321
+
+
+### Question 6: Subtraction (5 marks - 2.5 marks each)
+
+a) 8,543 - 3,786 = 4,757
+
+b) 15,000 - 6,847 = 8,153
+
+
+### Question 7: Multiplication (5 marks - 2.5 marks each)
+
+a) 456 × 23 = 10,488
+
+b) 789 × 45 = 35,505
+
+
+### Question 8: Long Division (5 marks - 2.5 marks each)
+
+a) 2,436 ÷ 12 = 203
+
+b) 5,670 ÷ 27 = 210 remainder 0
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 4: MULTIPLES AND FACTORS (20 marks)
+
+### Question 9: Multiples (6 marks)
+
+a) First 6 multiples of 8: (1 mark)
+   8, 16, 24, 32, 40, 48
+
+b) First 6 multiples of 12: (1 mark)
+   12, 24, 36, 48, 60, 72
+
+c) LCM of 8 and 12: (4 marks)
+   24
+
+
+### Question 10: Factors (7 marks)
+
+a) All factors of 24: (2 marks)
+   1, 2, 3, 4, 6, 8, 12, 24
+
+b) All factors of 36: (2 marks)
+   1, 2, 3, 4, 6, 9, 12, 18, 36
+
+c) HCF of 24 and 36: (3 marks)
+   12
+
+
+### Question 11: Prime Factorization (7 marks)
+
+a) 60 as product of prime factors: (2 marks)
+   60 = 2 × 2 × 3 × 5  or  2² × 3 × 5
+
+b) 84 as product of prime factors: (2 marks)
+   84 = 2 × 2 × 3 × 7  or  2² × 3 × 7
+
+c) HCF of 60 and 84 using prime factorization: (3 marks)
+   HCF = 2 × 2 × 3 = 12
+   (Common factors: 2, 2, 3)
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 5: RATIO AND PROPORTION (20 marks)
+
+### Question 12: Simple Ratios (8 marks)
+
+a) 15:25 in simplest form: (2 marks)
+   3:5
+
+b) Sugar needed for 400g flour (ratio 5:2): (3 marks)
+   400g ÷ 5 = 80g per part
+   Sugar = 2 × 80g = 160g
+
+c) R450 shared in ratio 2:3:4: (3 marks)
+   Total parts = 2 + 3 + 4 = 9
+   One part = R450 ÷ 9 = R50
+   
+   First person: R100 (2 × R50)
+   Second person: R150 (3 × R50)
+   Third person: R200 (4 × R50)
+
+
+### Question 13: Rate Problems (6 marks)
+
+a) Speed calculation: (3 marks)
+   Speed = 270 km ÷ 3 hours = 90 km/h
+
+b) Water flow: (3 marks)
+   15 litres/min × 8 min = 120 litres
+
+
+### Question 14: Proportion (6 marks)
+
+5 pens cost R35
+
+a) 1 pen: (2 marks)
+   R35 ÷ 5 = R7
+
+b) 8 pens: (2 marks)
+   8 × R7 = R56
+
+c) 12 pens: (2 marks)
+   12 × R7 = R84
+
+═══════════════════════════════════════════════════════════════════════
+
+## SECTION 6: WORD PROBLEMS (15 marks)
+
+### Question 15: Shopping (5 marks)
+
+a) Discount amount: (2 marks)
+   25% of R180 = 0.25 × R180 = R45
+
+b) Sale price: (3 marks)
+   R180 - R45 = R135
+
+
+### Question 16: Simple Interest (5 marks)
+
+I = (P × R × T) / 100
+I = (2,000 × 6 × 3) / 100
+I = 36,000 / 100
+Interest = R360
+
+
+### Question 17: Mixed Problem (5 marks)
+
+a) Estimate: (2 marks)
+   45 × R300 = R13,500 (desks)
+   45 × R200 = R9,000 (chairs)
+   Estimate: R22,500
+
+b) Exact total: (3 marks)
+   Desks: 45 × R320 = R14,400
+   Chairs: 45 × R180 = R8,100
+   Exact total: R22,500
+
+═══════════════════════════════════════════════════════════════════════
+
+## TOTAL: 100 marks
+
+═══════════════════════════════════════════════════════════════════════
+
+## MARKING GUIDE
+
+90-100:  Outstanding (Level 7)
+80-89:   Excellent (Level 6)
+70-79:   Very Good (Level 5)
+60-69:   Good (Level 4)
+50-59:   Adequate (Level 3)
+40-49:   Partial Achievement (Level 2)
+30-39:   Elementary (Level 1)
+0-29:    Not Achieved
+
+═══════════════════════════════════════════════════════════════════════
+
+## COMMON ERRORS TO WATCH FOR
+
+1. **Number Classification**: Students often forget that all natural 
+   numbers are also rational numbers
+
+2. **Rounding**: Watch for errors when the digit is 5 (round up)
+
+3. **Column Arithmetic**: Check carrying/borrowing carefully
+
+4. **LCM vs HCF**: Students confuse which is larger/smaller
+
+5. **Ratios**: Ensure ratios are simplified to lowest terms
+
+6. **Word Problems**: Students often miss steps or units
+
+═══════════════════════════════════════════════════════════════════════

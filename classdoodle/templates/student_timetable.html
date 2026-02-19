@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}My Timetable — {{ student.name }}{% endblock %}
+
+{% block content %}
+<div style="padding:2rem 0 110px;">
+
+    <!-- Header -->
+    <div class="glass-container" data-animate style="margin-bottom:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <a href="/my-portal" style="font-size:0.82rem;color:rgba(255,255,255,0.3);text-decoration:none;" onmouseover="this.style.color='#22d3ee'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">← My Portal</a>
+                <h1 style="font-family:'Playfair Display',serif;font-size:1.9rem;margin:6px 0 4px;">My <span class="text-gold">Timetable</span></h1>
+                <p style="color:rgba(255,255,255,0.4);font-size:0.85rem;margin:0;">{{ today }}</p>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:700;color:#22d3ee;line-height:1;">{{ today_name }}</div>
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,0.3);margin-top:4px;">Today</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's classes highlighted -->
+    {% if today_slots %}
+    <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.76rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(34,211,238,0.7);margin-bottom:0.9rem;padding-left:4px;">Today — {{ today_name }}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem;">
+            {% for slot in today_slots %}
+            <div style="background:linear-gradient(135deg,rgba(8,145,178,0.12),rgba(34,211,238,0.05));border:1px solid rgba(34,211,238,0.28);border-left:3px solid #22d3ee;border-radius:12px;padding:16px 18px;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                    <div style="font-weight:700;font-size:0.95rem;line-height:1.2;">{{ slot.subject }}</div>
+                    {% if slot.period %}<div style="font-size:0.7rem;color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:6px;">P{{ slot.period }}</div>{% endif %}
+                </div>
+                <div style="font-size:0.84rem;color:#22d3ee;font-weight:500;">{{ slot.time_from }} – {{ slot.time_to }}</div>
+                {% if slot.room %}<div style="font-size:0.76rem;color:rgba(255,255,255,0.3);margin-top:4px;">Room {{ slot.room }}</div>{% endif %}
+                {% if slot.teacher %}<div style="font-size:0.76rem;color:rgba(255,255,255,0.3);">{{ slot.teacher }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="glass-container" data-animate style="margin-bottom:1.5rem;text-align:center;padding:2rem;">
+        <p style="color:rgba(255,255,255,0.3);font-size:0.9rem;">No classes scheduled for today ({{ today_name }}).</p>
+    </div>
+    {% endif %}
+
+    <!-- Full weekly schedule -->
+    {% set has_any = namespace(found=false) %}
+    {% for day in days %}{% if timetable_grid[day] %}{% set has_any.found = true %}{% endif %}{% endfor %}
+
+    {% if has_any.found %}
+    <div class="glass-container" data-animate>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.5rem;">Weekly <span class="text-gold">Schedule</span></h2>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:separate;border-spacing:0 5px;min-width:580px;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left;padding:6px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);font-weight:500;">Day</th>
+                        <th style="text-align:center;padding:6px 10px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);font-weight:500;">Per.</th>
+                        <th style="text-align:left;padding:6px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);font-weight:500;">Subject</th>
+                        <th style="text-align:left;padding:6px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);font-weight:500;">Time</th>
+                        <th style="text-align:left;padding:6px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);font-weight:500;">Room</th>
+                        <th style="text-align:left;padding:6px 14px;font-size:0.7rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,0.35);font-weight:500;">Teacher</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in days %}
+                    {% if timetable_grid[day] %}
+                    {% for slot in timetable_grid[day] %}
+                    <tr style="background:{% if day == today_name %}rgba(34,211,238,0.06){% else %}rgba(255,255,255,0.02){% endif %};">
+                        <td style="padding:10px 14px;border-radius:{% if loop.first %}8px 0 0 8px{% else %}0{% endif %};font-weight:{% if day == today_name %}700{% else %}400{% endif %};color:{% if day == today_name %}#22d3ee{% else %}rgba(255,255,255,0.7){% endif %};white-space:nowrap;">
+                            {% if loop.first %}{{ day }}{% if day == today_name %} <span style="font-size:0.68rem;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.3);border-radius:6px;padding:1px 6px;vertical-align:middle;">TODAY</span>{% endif %}{% endif %}
+                        </td>
+                        <td style="padding:10px;text-align:center;color:rgba(255,255,255,0.4);font-size:0.85rem;">{{ slot.period }}</td>
+                        <td style="padding:10px 14px;font-weight:500;font-size:0.9rem;">{{ slot.subject }}</td>
+                        <td style="padding:10px 14px;color:rgba(255,255,255,0.55);font-size:0.85rem;white-space:nowrap;">{{ slot.time_from }} – {{ slot.time_to }}</td>
+                        <td style="padding:10px 14px;color:rgba(255,255,255,0.35);font-size:0.84rem;">{{ slot.room or '—' }}</td>
+                        <td style="padding:10px 14px;color:rgba(255,255,255,0.35);font-size:0.84rem;border-radius:{% if loop.last %}0 8px 8px 0{% else %}0{% endif %};">{{ slot.teacher or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="glass-container" style="text-align:center;padding:4rem 2rem;" data-animate>
+        <div style="font-size:3rem;margin-bottom:1rem;opacity:.4;">&#9633;</div>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.3rem;color:rgba(255,255,255,0.4);margin-bottom:.6rem;">No Timetable Set</h2>
+        <p style="color:rgba(255,255,255,0.25);font-size:0.9rem;">Your teacher hasn't set your timetable yet.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Fixed Bottom Nav -->
+<div style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;">
+    <div style="background:rgba(10,10,10,0.97);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:6px;display:flex;gap:4px;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+        <a href="/my-portal" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">⊡</span>Home</a>
+        <a href="/my-portal/subjects" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">📚</span>Subjects</a>
+        <a href="/my-portal/timetable" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;background:rgba(34,211,238,0.15);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;"><span style="font-size:1rem;">◫</span>Schedule</a>
+        <a href="/my-portal/progress" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 22px;border-radius:100px;text-decoration:none;color:rgba(255,255,255,0.35);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.9)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"><span style="font-size:1rem;">◈</span>Progress</a>
+    </div>
+</div>
+{% endblock %}

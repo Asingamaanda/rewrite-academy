@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Add Student - ClassDoodle{% endblock %}
+
+{% block content %}
+<h2 style="color: #667eea; margin-bottom: 30px;">➕ Add New Student</h2>
+
+<form method="POST" action="/student/add" style="max-width: 800px;">
+    <div style="display: grid; gap: 20px;">
+        
+        <!-- Student Info -->
+        <div style="background: #f8f9fa; padding: 25px; border-radius: 10px;">
+            <h3 style="color: #667eea; margin-bottom: 20px;">Student Information</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Full Name *</label>
+                <input type="text" name="name" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Email *</label>
+                <input type="email" name="email" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Phone</label>
+                <input type="tel" name="phone" placeholder="0712345678" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+        </div>
+        
+        <!-- Parent Info -->
+        <div style="background: #f8f9fa; padding: 25px; border-radius: 10px;">
+            <h3 style="color: #667eea; margin-bottom: 20px;">Parent/Guardian Information</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Parent Name *</label>
+                <input type="text" name="parent_name" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Parent Phone *</label>
+                <input type="tel" name="parent_phone" required placeholder="0823456789" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Parent Email</label>
+                <input type="email" name="parent_email" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+        </div>
+        
+        <!-- Subjects -->
+        <div style="background: #f8f9fa; padding: 25px; border-radius: 10px;">
+            <h3 style="color: #667eea; margin-bottom: 20px;">Subjects (Select at least 3) *</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                {% for subject in subjects %}
+                <label style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; cursor: pointer;">
+                    <input type="checkbox" name="subjects" value="{{ subject }}" style="margin-right: 10px; width: 18px; height: 18px;">
+                    {{ subject }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        <div style="background: #f8f9fa; padding: 25px; border-radius: 10px;">
+            <h3 style="color: #667eea; margin-bottom: 20px;">Additional Notes</h3>
+            
+            <textarea name="notes" rows="4" placeholder="Any special requirements or notes..." style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; font-family: inherit;"></textarea>
+        </div>
+        
+        <!-- Buttons -->
+        <div style="display: flex; gap: 15px;">
+            <button type="submit" class="btn btn-success" style="flex: 1;">✅ Register Student</button>
+            <a href="/students" class="btn" style="flex: 1; text-align: center; background: #6c757d;">Cancel</a>
+        </div>
+    </div>
+</form>
+
+{% endblock %}

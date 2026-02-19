@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Students - ClassDoodle{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2 style="color: #667eea; margin: 0;">👥 Students ({{ filtered_count }} / {{ total_count }})</h2>
+    <a href="/student/add" class="btn btn-success">➕ Add Student</a>
+</div>
+
+<!-- Search and Filter -->
+<form method="GET" action="/students">
+    <div class="filter-bar">
+        <input type="text" name="search" placeholder="🔍 Search by name or ID..." value="{{ filters.search }}">
+        
+        <select name="risk">
+            <option value="">All Risk Levels</option>
+            <option value="low" {% if filters.risk == 'low' %}selected{% endif %}>🟢 On Track</option>
+            <option value="medium" {% if filters.risk == 'medium' %}selected{% endif %}>🟡 Medium Risk</option>
+            <option value="high" {% if filters.risk == 'high' %}selected{% endif %}>🔴 High Risk</option>
+        </select>
+        
+        <select name="payment">
+            <option value="">All Payment Status</option>
+            <option value="paid" {% if filters.payment == 'paid' %}selected{% endif %}>✅ Paid</option>
+            <option value="outstanding" {% if filters.payment == 'outstanding' %}selected{% endif %}>⚠️ Outstanding</option>
+        </select>
+        
+        <select name="subject">
+            <option value="">All Subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject }}" {% if filters.subject == subject %}selected{% endif %}>{{ subject }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit" class="btn">Filter</button>
+        <a href="/students" class="btn" style="background: #6c757d;">Clear</a>
+    </div>
+</form>
+
+<!-- Students Table -->
+{% if students %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Subjects</th>
+            <th>Average</th>
+            <th>Attendance</th>
+            <th>Risk Level</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in students %}
+        <tr>
+            <td><strong>{{ student.student_id }}</strong></td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.email }}</td>
+            <td>{{ student.subjects|length }} subjects</td>
+            <td>{{ student.overall_average if student.overall_average else 'N/A' }}%</td>
+            <td>{{ student.attendance_rate if student.attendance_rate else 'N/A' }}%</td>
+            <td>
+                {% if student.risk_level == 'high' %}
+                <span class="badge badge-high">🔴 High Risk</span>
+                {% elif student.risk_level == 'medium' %}
+                <span class="badge badge-medium">🟡 Medium</span>
+                {% elif student.risk_level == 'low' %}
+                <span class="badge badge-low">🟢 On Track</span>
+                {% else %}
+                <span class="badge" style="background: #ddd; color: #666;">N/A</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/student/{{ student.student_id }}" class="btn" style="padding: 8px 15px; font-size: 0.9em;">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 10px;">
+    <h3 style="color: #666;">No students found</h3>
+    <p style="color: #999;">Try adjusting your filters or add new students</p>
+    <a href="/student/add" class="btn btn-success" style="margin-top: 20px;">➕ Add First Student</a>
+</div>
+{% endif %}
+
+{% endblock %}
