@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Risk & Alerts — Rewrite Academy{% endblock %}
+
+{% block content %}
+<style>
+  .risk-grid    { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:32px; }
+  .risk-card    { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 22px; }
+  .risk-card h4 { font-size:.75rem; text-transform:uppercase; letter-spacing:.1em; color:var(--fg-muted); margin-bottom:10px; }
+  .risk-num     { font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:900; line-height:1; }
+  .risk-sub     { font-size:.78rem; color:var(--fg-muted); margin-top:4px; }
+  .c-critical   { color:#f87171; }
+  .c-support    { color:#fbbf24; }
+  .c-risk       { color:#fb923c; }
+  .c-ok         { color:#4ade80; }
+  .c-restricted { color:#f472b6; }
+
+  .alert-table  { width:100%; border-collapse:collapse; }
+  .alert-table th { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+                    color:var(--fg-muted); padding:8px 12px; border-bottom:1px solid var(--border);
+                    text-align:left; }
+  .alert-table td { padding:12px; border-bottom:1px solid rgba(255,255,255,.04);
+                    font-size:.85rem; color:var(--fg-muted); vertical-align:middle; }
+  .alert-table tr:hover td { background:rgba(34,211,238,.03); }
+  .badge         { display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+                   border-radius:99px; font-size:.7rem; font-weight:700; text-transform:uppercase;
+                   letter-spacing:.06em; }
+  .badge-critical    { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.25); }
+  .badge-support     { background:rgba(251,191,36,.12);  color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+  .badge-attendance  { background:rgba(251,146,60,.12);  color:#fb923c; border:1px solid rgba(251,146,60,.25); }
+  .badge-payment     { background:rgba(244,114,182,.12); color:#f472b6; border:1px solid rgba(244,114,182,.25); }
+  .badge-general     { background:rgba(148,163,184,.1);  color:#94a3b8; border:1px solid rgba(148,163,184,.2); }
+  .btn-resolve   { padding:5px 14px; border-radius:6px; font-size:.75rem; font-weight:700;
+                   background:rgba(74,222,128,.1); border:1px solid rgba(74,222,128,.25);
+                   color:#4ade80; cursor:pointer; }
+  .btn-resolve:hover { background:rgba(74,222,128,.2); }
+  .snapshot-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-top:24px; }
+  .snap-card     { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px; }
+  .snap-card h4  { font-size:.8rem; font-weight:700; color:var(--fg); margin-bottom:10px; }
+  .snap-bar      { height:6px; border-radius:99px; background:rgba(255,255,255,.07); margin:4px 0 8px; overflow:hidden; }
+  .snap-fill     { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-dark),var(--accent)); }
+  .snap-row      { display:flex; justify-content:space-between; font-size:.75rem; color:var(--fg-muted); margin-bottom:4px; }
+  .snap-avg      { font-weight:700; }
+  .snap-avg.ok   { color:#4ade80; }
+  .snap-avg.warn { color:#fbbf24; }
+  .snap-avg.bad  { color:#f87171; }
+</style>
+
+<!-- ── PAGE HEADER ── -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px;">Automation Engine</div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:900;color:var(--fg);">Risk &amp; Alerts</h1>
+  </div>
+  <form method="POST" action="/admin/run-automation" style="margin:0;">
+    <button type="submit" class="btn-action" style="padding:10px 24px;border-radius:8px;font-size:.85rem;">
+      ▶ Run Automation Now
+    </button>
+  </form>
+</div>
+
+<!-- ── RISK SUMMARY CARDS ── -->
+<div class="risk-grid">
+  <div class="risk-card">
+    <h4>Critical (Academic)</h4>
+    <div class="risk-num c-critical">{{ summary.academic.get('critical', 0) }}</div>
+    <div class="risk-sub">Weighted avg below 50%</div>
+  </div>
+  <div class="risk-card">
+    <h4>Needs Support</h4>
+    <div class="risk-num c-support">{{ summary.academic.get('needs_support', 0) }}</div>
+    <div class="risk-sub">Weighted avg 50 – 59%</div>
+  </div>
+  <div class="risk-card">
+    <h4>On Track</h4>
+    <div class="risk-num c-ok">{{ summary.academic.get('on_track', 0) }}</div>
+    <div class="risk-sub">Weighted avg 60%+</div>
+  </div>
+  <div class="risk-card">
+    <h4>Attendance Risk</h4>
+    <div class="risk-num c-risk">{{ summary.attendance.get('at_risk', 0) }}</div>
+    <div class="risk-sub">Below 75% this week</div>
+  </div>
+  <div class="risk-card">
+    <h4>Outstanding Payments</h4>
+    <div class="risk-num c-support">{{ summary.payment.get('outstanding', 0) }}</div>
+    <div class="risk-sub">Overdue, not yet restricted</div>
+  </div>
+  <div class="risk-card">
+    <h4>Access Restricted</h4>
+    <div class="risk-num c-restricted">{{ summary.payment.get('restricted', 0) }}</div>
+    <div class="risk-sub">Overdue &gt; 7 days</div>
+  </div>
+</div>
+
+<!-- ── UNRESOLVED ALERTS ── -->
+<div class="card-cinematic" style="margin-bottom:32px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+    <h3 style="font-size:1rem;font-weight:700;color:var(--fg);">
+      Unresolved Alerts
+      {% if summary.alerts %}
+        <span style="margin-left:8px;background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3);
+                     padding:2px 10px;border-radius:99px;font-size:.7rem;font-weight:800;">
+          {{ summary.alerts|length }}
+        </span>
+      {% endif %}
+    </h3>
+  </div>
+
+  {% if summary.alerts %}
+  <div style="overflow-x:auto;">
+    <table class="alert-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Type</th>
+          <th>Message</th>
+          <th>Triggered</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alert in summary.alerts %}
+        <tr>
+          <td style="color:var(--fg);font-weight:600;">{{ alert.name }}<br>
+            <span style="font-size:.72rem;color:var(--fg-muted);">{{ alert.student_id }}</span>
+          </td>
+          <td>
+            {% if alert.alert_type == 'academic_risk' %}
+              <span class="badge badge-critical">Academic</span>
+            {% elif alert.alert_type == 'attendance_risk' %}
+              <span class="badge badge-attendance">Attendance</span>
+            {% elif alert.alert_type in ('payment_overdue','payment_restricted') %}
+              <span class="badge badge-payment">Payment</span>
+            {% else %}
+              <span class="badge badge-general">{{ alert.alert_type }}</span>
+            {% endif %}
+          </td>
+          <td>{{ alert.message }}</td>
+          <td style="white-space:nowrap;">{{ alert.created_at[:16] }}</td>
+          <td>
+            <form method="POST" action="/admin/risk-alerts/resolve/{{ alert.id }}" style="margin:0;">
+              <button type="submit" class="btn-resolve">Resolve</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color:var(--fg-muted);font-size:.9rem;text-align:center;padding:24px 0;">
+    ✅ No unresolved alerts. All students look good.
+  </p>
+  {% endif %}
+</div>
+
+<!-- ── PROGRESS SNAPSHOTS ── -->
+{% if summary.snapshots %}
+<div>
+  <h3 style="font-size:1rem;font-weight:700;color:var(--fg);margin-bottom:16px;">Weekly Progress Snapshots</h3>
+  {% set ns = namespace(current_student='', weeks=[]) %}
+  {% set snap_by_student = {} %}
+  {% for s in summary.snapshots %}
+    {% if s.student_id not in snap_by_student %}
+      {% set _ = snap_by_student.update({s.student_id: []}) %}
+    {% endif %}
+    {% set _ = snap_by_student[s.student_id].append(s) %}
+  {% endfor %}
+
+  <div class="snapshot-grid">
+    {% for student in students %}
+      {% set snaps = snap_by_student.get(student.student_id, []) %}
+      {% if snaps %}
+      <div class="snap-card">
+        <h4>{{ student.name }}</h4>
+        {% for snap in snaps[-6:] %}
+          {% set pct = snap.average %}
+          {% set color = 'ok' if pct >= 60 else ('warn' if pct >= 50 else 'bad') %}
+          <div class="snap-row">
+            <span>{{ snap.week }}</span>
+            <span class="snap-avg {{ color }}">{{ pct }}%</span>
+          </div>
+          <div class="snap-bar"><div class="snap-fill" style="width:{{ [pct,100]|min }}%"></div></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

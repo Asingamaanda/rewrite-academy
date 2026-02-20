@@ -16,6 +16,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / 'backend'))
 
 from backend.api import ClassDoodleAPI
+from backend import automation
 from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
 
 app = Flask(__name__)
@@ -102,6 +103,17 @@ def student_required(f):
     def decorated(*args, **kwargs):
         if session.get('user_role') != 'student':
             flash('Access denied. Please log in as a student.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def teacher_required(f):
+    """Allows both admin and teacher roles."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get('user_role') not in ('admin', 'teacher'):
+            flash('Access denied. Teacher login required.', 'error')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
@@ -301,12 +313,20 @@ def attendance():
 @admin_required
 def mark_attendance():
     try:
+        present_ids = request.form.getlist('present[]')
         result = api.mark_class_attendance(
-            present_student_ids=request.form.getlist('present[]'),
+            present_student_ids=present_ids,
             date_str=request.form.get('date'),
             time_slot=request.form.get('time_slot'),
             subject=request.form.get('subject')
         )
+        # Automation Rule 2 — attendance risk check for every student marked
+        all_ids = request.form.getlist('all_student_ids[]') or present_ids
+        for sid in all_ids:
+            try:
+                automation.run_for_student(sid)
+            except Exception:
+                pass
         flash(f"Attendance marked: {result['present']} present, {result['absent']} absent", "success")
         return redirect(url_for('attendance', date=request.form.get('date')))
     except Exception as e:
@@ -345,11 +365,29 @@ def add_assessment():
         student_id = request.form.get('student_id')
         score = float(request.form.get('score'))
         max_score = float(request.form.get('max_score', 100))
+        weight = float(request.form.get('weight', 1))
         api.record_assessment(
             student_id=student_id, subject=request.form.get('subject'),
             assessment_type=request.form.get('assessment_type'), score=score, max_score=max_score,
             date_str=request.form.get('date', date.today().isoformat()), notes=request.form.get('notes', '')
         )
+        # Store weight on the just-inserted row
+        try:
+            conn = get_db()
+            conn.execute(
+                "UPDATE assessments SET weight=? WHERE student_id=? AND rowid=("
+                "SELECT MAX(rowid) FROM assessments WHERE student_id=?)",
+                (weight, student_id, student_id)
+            )
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+        # Automation Rule 1 — academic risk check
+        try:
+            automation.run_for_student(student_id)
+        except Exception:
+            pass
         flash(f"Assessment recorded: {round((score/max_score)*100, 1)}%", "success")
         return redirect(url_for('student_detail', student_id=student_id) if request.form.get('from') == 'student' else url_for('assessments'))
     except Exception as e:
@@ -379,11 +417,60 @@ def record_payment():
         api.record_payment(student_id=student_id, amount=amount, month_for=month_for,
                          payment_method=request.form.get('payment_method', 'Cash'),
                          reference=request.form.get('reference', ''))
+        # Automation Rule 3 — payment risk check
+        try:
+            automation.run_for_student(student_id)
+        except Exception:
+            pass
         flash(f"Payment recorded: R{amount:,.2f} for {month_for}", "success")
         return redirect(url_for('student_detail', student_id=student_id) if request.form.get('from') == 'student' else url_for('payments', month=month_for))
     except Exception as e:
         flash(f"Error: {str(e)}", "error")
         return redirect(url_for('payments'))
+
+
+# ==================== AUTOMATION ENGINE ====================
+
+@app.route('/admin/run-automation', methods=['POST'])
+@admin_required
+def run_automation():
+    """Manually trigger the full automation engine across all students."""
+    try:
+        results = automation.run_all()
+        counts = {'critical': 0, 'needs_support': 0, 'at_risk': 0, 'restricted': 0}
+        for sid, r in results.items():
+            if r.get('academic') and r['academic'].get('risk') in ('critical', 'needs_support'):
+                counts[r['academic']['risk']] += 1
+            if r.get('attendance') and r['attendance'].get('at_risk'):
+                counts['at_risk'] += 1
+            if r.get('payment') and r['payment'].get('status') == 'restricted':
+                counts['restricted'] += 1
+        flash(
+            f"Automation complete — {len(results)} students checked. "
+            f"{counts['critical']} critical, {counts['needs_support']} need support, "
+            f"{counts['at_risk']} attendance warnings, {counts['restricted']} restricted.",
+            'success'
+        )
+    except Exception as e:
+        flash(f"Automation error: {str(e)}", 'error')
+    return redirect(url_for('risk_alerts'))
+
+
+@app.route('/admin/risk-alerts')
+@admin_required
+def risk_alerts():
+    """Risk and alerts dashboard."""
+    summary = automation.get_risk_summary()
+    all_students = api.get_all_students_summary()
+    return render_template('risk_alerts.html', summary=summary, students=all_students)
+
+
+@app.route('/admin/risk-alerts/resolve/<int:alert_id>', methods=['POST'])
+@admin_required
+def resolve_alert(alert_id):
+    automation.resolve_alert(alert_id)
+    flash('Alert resolved.', 'success')
+    return redirect(url_for('risk_alerts'))
 
 
 # ==================== TIMETABLE (ADMIN) ====================
@@ -727,7 +814,8 @@ def student_homepage_admin(student_id):
 def student_home():
     """Student's personal home page after login"""
     student_id = session['student_id']
-    return _render_student_portal(student_id)
+    restricted = automation.is_restricted(student_id)
+    return _render_student_portal(student_id, payment_restricted=restricted)
 
 
 @app.route('/my-portal/videos')
@@ -877,7 +965,7 @@ def student_progress():
 
 # ==================== SHARED HELPER ====================
 
-def _render_student_portal(student_id):
+def _render_student_portal(student_id, payment_restricted=False):
     student = api.get_student_info(student_id)
     if not student:
         flash(f"Student {student_id} not found", "error")
@@ -926,6 +1014,7 @@ def _render_student_portal(student_id):
                          schedule=[dict(s) for s in tmt_slots] or schedule,
                          attendance=attendance_history,
                          video_counts=video_counts,
+                         payment_restricted=payment_restricted,
                          today=today.strftime('%A, %d %B %Y'))
 
 

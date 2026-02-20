@@ -42,6 +42,9 @@ class ClassDoodleDB:
                 parent_email TEXT,
                 registration_date DATE NOT NULL,
                 status TEXT DEFAULT 'active',
+                academic_risk TEXT DEFAULT 'on_track',
+                attendance_risk TEXT DEFAULT 'ok',
+                payment_risk TEXT DEFAULT 'pending',
                 notes TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -82,6 +85,7 @@ class ClassDoodleDB:
                 assessment_type TEXT NOT NULL,
                 score REAL NOT NULL,
                 max_score REAL DEFAULT 100,
+                weight REAL DEFAULT 1,
                 date DATE NOT NULL,
                 notes TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,7 +99,8 @@ class ClassDoodleDB:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 student_id TEXT NOT NULL,
                 amount REAL NOT NULL,
-                payment_date DATE NOT NULL,
+                payment_date DATE,
+                due_date DATE,
                 payment_method TEXT,
                 reference TEXT,
                 month_for TEXT NOT NULL,
@@ -150,13 +155,13 @@ class ClassDoodleDB:
 
         # ==================== AUTH & PORTAL TABLES ====================
 
-        # User accounts (admin + students)
+        # User accounts (admin + teacher + students)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                role TEXT NOT NULL CHECK(role IN ('admin','student')),
+                role TEXT NOT NULL CHECK(role IN ('admin','teacher','student')),
                 student_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -211,7 +216,59 @@ class ClassDoodleDB:
             )
         """)
 
+        # Subjects master table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS subjects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                teacher TEXT DEFAULT '',
+                weight REAL DEFAULT 1.0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Progress snapshots (weekly averages for trend graphs)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS progress_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id TEXT NOT NULL,
+                week TEXT NOT NULL,
+                average REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(student_id, week),
+                FOREIGN KEY (student_id) REFERENCES students(student_id)
+            )
+        """)
+
+        # Automation alerts log
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS automation_alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id TEXT NOT NULL,
+                alert_type TEXT NOT NULL,
+                message TEXT NOT NULL,
+                resolved INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (student_id) REFERENCES students(student_id)
+            )
+        """)
+
         conn.commit()
+
+        # ── Live DB migrations (add columns to existing databases) ────────────
+        migrations = [
+            ("ALTER TABLE students ADD COLUMN academic_risk TEXT DEFAULT 'on_track'",),
+            ("ALTER TABLE students ADD COLUMN attendance_risk TEXT DEFAULT 'ok'",),
+            ("ALTER TABLE students ADD COLUMN payment_risk TEXT DEFAULT 'pending'",),
+            ("ALTER TABLE assessments ADD COLUMN weight REAL DEFAULT 1",),
+            ("ALTER TABLE payments ADD COLUMN due_date DATE",),
+        ]
+        for (sql,) in migrations:
+            try:
+                cursor.execute(sql)
+                conn.commit()
+            except Exception:
+                pass  # Column already exists — ignore
 
         # Seed default admin account if not exists
         from werkzeug.security import generate_password_hash
