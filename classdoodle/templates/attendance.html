@@ -1,69 +1,139 @@
 {% extends "base.html" %}
+{% block title %}Attendance — Rewrite Academy{% endblock %}
 
-{% block title %}Attendance - ClassDoodle{% endblock %}
+{% block extra_css %}
+<style>
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.75rem; }
+@media(max-width:900px){.stat-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.stat-row{grid-template-columns:1fr 1fr;}}
+.stat-tile {
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:1.25rem 1.5rem;
+    text-align:center;
+}
+.stat-tile .val { font-size:1.75rem; font-weight:700; font-family:'Playfair Display',serif; }
+.stat-tile .lbl { font-size:0.75rem; color:var(--text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; }
+.period-card {
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:1.5rem;
+    margin-bottom:1.25rem;
+}
+.period-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:1.25rem;
+    padding-bottom:0.75rem;
+    border-bottom:1px solid var(--border);
+}
+.period-header h3 { font-size:1rem; color:var(--text); font-family:'Inter',sans-serif; font-weight:700; }
+.period-badge { font-size:0.72rem; font-weight:700; color:var(--accent); background:rgba(34,211,238,0.1); padding:3px 10px; border-radius:100px; }
+.student-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:0.6rem;
+    margin-bottom:1.25rem;
+}
+.student-check {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    transition:all 0.18s ease;
+}
+.student-check:hover { background:rgba(34,211,238,0.06); border-color:rgba(34,211,238,0.3); }
+.student-check input[type="checkbox"] { width:16px; height:16px; accent-color:var(--accent); flex-shrink:0; }
+.student-check .sid { font-size:0.72rem; color:var(--accent); font-weight:700; display:block; }
+.student-check .sname { font-size:0.85rem; color:var(--text-muted); }
+.date-bar {
+    display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:1rem 1.25rem;
+    margin-bottom:1.75rem;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<h2 style="color: #667eea; margin-bottom: 20px;">✅ Mark Attendance</h2>
+<div class="page-header">
+    <div class="flex-between">
+        <div>
+            <h1>✅ Mark Attendance</h1>
+            <p>Track daily presence per subject period</p>
+        </div>
+    </div>
+</div>
 
-<!-- Date Selector -->
-<form method="GET" action="/attendance" style="margin-bottom: 30px;">
-    <div style="display: flex; gap: 15px; align-items: center;">
-        <label style="font-weight: 600;">Date:</label>
-        <input type="date" name="date" value="{{ selected_date }}" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
-        <button type="submit" class="btn">Load Attendance</button>
-        <a href="/attendance" class="btn" style="background: #6c757d;">Today</a>
+<!-- Date selector -->
+<form method="GET" action="/attendance">
+    <div class="date-bar">
+        <label style="margin-bottom:0;white-space:nowrap;">Select Date</label>
+        <input type="date" name="date" value="{{ selected_date }}" style="width:auto;">
+        <button type="submit" class="btn-cinematic">Load</button>
+        <a href="/attendance" class="btn-outline">Today</a>
     </div>
 </form>
 
-<!-- Attendance Summary for Selected Date -->
+<!-- Summary stats -->
 {% if attendance_report.by_subject %}
-<div class="stat-cards" style="margin-bottom: 30px;">
-    <div class="stat-card card-blue">
-        <h3>{{ attendance_report.total }} students</h3>
-        <p>Total Registered</p>
+<div class="stat-row">
+    <div class="stat-tile">
+        <div class="val" style="color:var(--accent);">{{ attendance_report.total }}</div>
+        <div class="lbl">Registered</div>
     </div>
-    <div class="stat-card card-green">
-        <h3>{{ attendance_report.present }}</h3>
-        <p>Present Today</p>
+    <div class="stat-tile">
+        <div class="val" style="color:#34d399;">{{ attendance_report.present }}</div>
+        <div class="lbl">Present</div>
     </div>
-    <div class="stat-card card-red">
-        <h3>{{ attendance_report.absent }}</h3>
-        <p>Absent Today</p>
+    <div class="stat-tile">
+        <div class="val" style="color:#fca5a5;">{{ attendance_report.absent }}</div>
+        <div class="lbl">Absent</div>
     </div>
-    <div class="stat-card card-purple">
-        <h3>{{ ((attendance_report.present / attendance_report.total * 100) if attendance_report.total > 0 else 0)|round(1) }}%</h3>
-        <p>Attendance Rate</p>
+    <div class="stat-tile">
+        <div class="val" style="color:#fbbf24;">{{ ((attendance_report.present / attendance_report.total * 100) if attendance_report.total > 0 else 0)|round(1) }}%</div>
+        <div class="lbl">Rate</div>
     </div>
 </div>
 {% endif %}
 
+<!-- Period blocks -->
 {% if schedule %}
     {% for item in schedule %}
         {% if item.type == 'period' %}
-        <div style="margin-bottom: 30px; padding: 25px; background: #f8f9fa; border-radius: 10px;">
-            <h3 style="color: #667eea; margin-bottom: 15px;">
-                {{ item.time }} - {{ item.subject }}
-            </h3>
-            
+        <div class="period-card">
+            <div class="period-header">
+                <h3>{{ item.subject }}</h3>
+                <span class="period-badge">{{ item.time }}</span>
+            </div>
+
             <form method="POST" action="/attendance/mark">
                 <input type="hidden" name="date" value="{{ selected_date }}">
                 <input type="hidden" name="time_slot" value="{{ item.time }}">
                 <input type="hidden" name="subject" value="{{ item.subject }}">
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+
+                <div class="student-grid">
                     {% for student in students %}
-                    <label style="display: flex; align-items: center; padding: 10px; background: white; border-radius: 5px; cursor: pointer;">
-                        <input type="checkbox" name="present[]" value="{{ student.student_id }}" style="margin-right: 10px; width: 18px; height: 18px;">
-                        <span><strong>{{ student.student_id }}</strong> - {{ student.name }}</span>
+                    <label class="student-check">
+                        <input type="checkbox" name="present[]" value="{{ student.student_id }}">
+                        <div>
+                            <span class="sid">{{ student.student_id }}</span>
+                            <span class="sname">{{ student.name }}</span>
+                        </div>
                     </label>
                     {% endfor %}
                 </div>
-                
-                <div style="display: flex; gap: 15px;">
-                    <button type="submit" class="btn btn-success" style="flex: 1;">
-                        ✅ Mark Attendance for {{ item.subject }}
+
+                <div style="display:flex;gap:0.75rem;">
+                    <button type="submit" class="btn-gold" style="flex:1;justify-content:center;">
+                        ✅ Submit {{ item.subject }} Attendance
                     </button>
-                    <button type="button" onclick="selectAll(this)" class="btn" style="background: #17a2b8;">
+                    <button type="button" onclick="toggleAll(this)" class="btn-outline">
                         Select All
                     </button>
                 </div>
@@ -72,30 +142,30 @@
         {% endif %}
     {% endfor %}
 {% else %}
-    <div style="padding: 30px; text-align: center; background: #f8f9fa; border-radius: 10px;">
-        <h3 style="color: #667eea;">No classes scheduled for this day</h3>
-        <p style="color: #666; margin-top: 10px;">Select a weekday to mark attendance 📅</p>
+    <div style="text-align:center;padding:3.5rem 2rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">📅</div>
+        <h3 style="color:var(--text-muted);font-size:1.1rem;">No classes scheduled for this day</h3>
+        <p style="color:var(--text-faint);margin-top:0.5rem;font-size:0.875rem;">Select a weekday (Mon–Fri) to mark attendance</p>
     </div>
 {% endif %}
 
-<div style="margin-top: 30px; padding: 20px; background: #e7f3ff; border-radius: 10px;">
-    <h4 style="color: #667eea; margin-bottom: 15px;">💡 Quick Tip</h4>
-    <p style="color: #666;">
-        Check the boxes for students who are <strong>present</strong> in each class. 
-        Unchecked students are automatically marked as absent.
+<!-- Tip -->
+<div style="margin-top:1.5rem;background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.15);border-radius:var(--radius-md);padding:1rem 1.25rem;display:flex;gap:0.75rem;align-items:flex-start;">
+    <span style="font-size:1.1rem;flex-shrink:0;">💡</span>
+    <p style="font-size:0.875rem;color:var(--text-muted);margin:0;">
+        Tick the boxes for students who are <strong style="color:var(--text);">present</strong>. Unticked students are automatically recorded as absent.
     </p>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function selectAll(button) {
-    const form = button.closest('form');
-    const checkboxes = form.querySelectorAll('input[name="present[]"]');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    
-    checkboxes.forEach(cb => cb.checked = !allChecked);
-    button.textContent = allChecked ? 'Select All' : 'Deselect All';
+function toggleAll(btn) {
+    const form = btn.closest('form');
+    const cbs = form.querySelectorAll('input[name="present[]"]');
+    const allChecked = Array.from(cbs).every(c => c.checked);
+    cbs.forEach(c => c.checked = !allChecked);
+    btn.textContent = allChecked ? 'Select All' : 'Deselect All';
 }
 </script>
 {% endblock %}
