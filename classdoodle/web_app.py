@@ -166,6 +166,11 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/health')
+def health():
+    return 'OK', 200
+
+
 # ==================== ADMIN DASHBOARD ====================
 
 @app.route('/')
