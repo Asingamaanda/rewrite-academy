@@ -1,24 +1,40 @@
 """
-Email sender for application submissions.
-Uses Python's built-in smtplib via Gmail SMTP — completely free.
+Email + WhatsApp sender for application submissions.
+
+Email  — Python built-in smtplib via Gmail SMTP (free)
+WhatsApp — CallMeBot API (free, no Twilio needed)
 
 Required environment variables (set on Render):
-    GMAIL_USER          your Gmail address (e.g. yourname@gmail.com)
-    GMAIL_APP_PASSWORD  16-char App Password from Google Account → Security → App Passwords
-    ADMIN_EMAIL         where you want to receive applications (can be same as GMAIL_USER)
+    GMAIL_USER          your Gmail address
+    GMAIL_APP_PASSWORD  16-char App Password (Google Account → Security → App Passwords)
+    ADMIN_EMAIL         where to receive email notifications
+    CALLMEBOT_APIKEY    your CallMeBot API key (get it from the one-time setup below)
+
+CallMeBot one-time setup (takes 30 seconds, completely free):
+  1. Save +34 644 65 72 65 as a contact in your phone
+  2. Send this exact message on WhatsApp:
+        I allow callmebot to send me messages
+  3. You'll receive a reply with your API key
+  4. Set CALLMEBOT_APIKEY on Render with that key
 """
 
 import os
 import smtplib
 import ssl
+import urllib.request
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 
-
 GMAIL_USER         = os.environ.get('GMAIL_USER', '')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 ADMIN_EMAIL        = os.environ.get('ADMIN_EMAIL', GMAIL_USER)
+
+# WhatsApp via CallMeBot (free)
+# Phone: 0732623366 → international → 27732623366 (remove leading 0, prepend 27)
+WHATSAPP_PHONE    = os.environ.get('WHATSAPP_PHONE', '27732623366')
+CALLMEBOT_APIKEY  = os.environ.get('CALLMEBOT_APIKEY', '')
 
 
 def send_application_email(application: dict) -> tuple[bool, str]:
@@ -186,5 +202,53 @@ Reply to this email or call {application['phone']} to follow up.
         return True, ''
     except smtplib.SMTPAuthenticationError:
         return False, 'Gmail authentication failed. Check GMAIL_USER and GMAIL_APP_PASSWORD.'
+    except Exception as e:
+        return False, str(e)
+
+
+def send_whatsapp_notification(application: dict) -> tuple[bool, str]:
+    """
+    Send a WhatsApp message to WHATSAPP_PHONE via CallMeBot (free).
+    Returns (success: bool, error_message: str).
+
+    CallMeBot one-time setup:
+      1. Save +34 644 65 72 65 as a contact
+      2. Send 'I allow callmebot to send me messages' to that number on WhatsApp
+      3. You'll get your API key back — set it as CALLMEBOT_APIKEY on Render
+    """
+    if not CALLMEBOT_APIKEY:
+        return False, 'CALLMEBOT_APIKEY not set'
+
+    subjects_list = application.get('subjects', [])
+    if isinstance(subjects_list, list):
+        subjects_str = ', '.join(subjects_list)
+    else:
+        subjects_str = str(subjects_list)
+
+    text = (
+        f"\U0001f4dd New Application — Rewrite Academy\n"
+        f"{'='*36}\n"
+        f"Name      : {application['full_name']}\n"
+        f"Phone     : {application['phone']}\n"
+        f"Subjects  : {subjects_str}\n"
+        f"Year      : {application.get('year_failed') or 'N/A'}\n"
+        f"School    : {application.get('previous_school') or 'N/A'}\n"
+        f"Parent    : {application.get('parent_name') or 'N/A'} {application.get('parent_phone') or ''}\n"
+    )
+    if application.get('message'):
+        text += f"Message   : {application['message'][:200]}\n"
+    text += f"{'='*36}\nReply or call {application['phone']} to follow up."
+
+    encoded = urllib.parse.quote(text)
+    url = f"https://api.callmebot.com/whatsapp.php?phone={WHATSAPP_PHONE}&text={encoded}&apikey={CALLMEBOT_APIKEY}"
+
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'RewriteAcademy/1.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = resp.read().decode('utf-8', errors='ignore')
+            # CallMeBot returns "Message queued" on success
+            if resp.status == 200:
+                return True, ''
+            return False, body[:200]
     except Exception as e:
         return False, str(e)

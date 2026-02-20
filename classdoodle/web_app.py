@@ -17,7 +17,7 @@ sys.path.append(str(Path(__file__).parent / 'backend'))
 
 from backend.api import ClassDoodleAPI
 from backend import automation
-from backend.mailer import send_application_email
+from backend.mailer import send_application_email, send_whatsapp_notification
 from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
 
 app = Flask(__name__)
@@ -264,6 +264,10 @@ def apply():
     ok, err = send_application_email(application_data)
     if not ok:
         app.logger.warning(f'Email send failed: {err}')
+
+    wa_ok, wa_err = send_whatsapp_notification(application_data)
+    if not wa_ok:
+        app.logger.warning(f'WhatsApp notification failed: {wa_err}')
 
     return render_template('apply.html', submitted=True, app_name=full_name)
 
