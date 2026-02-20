@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rewrite Academy — Matric Rewrite Support Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #06080f;
+      --surface:      #0c0f1e;
+      --surface2:     #111527;
+      --border:       rgba(34,211,238,.12);
+      --accent:       #22d3ee;
+      --accent-dark:  #0891b2;
+      --fg:           #f1f5f9;
+      --fg-muted:     #94a3b8;
+      --green:        #4ade80;
+      --pink:         #f472b6;
+      --amber:        #fbbf24;
+      --radius:       14px;
+      --radius-sm:    8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ─────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(6,8,15,.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--fg);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a {
+      color: var(--fg-muted); font-size: .9rem; text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--fg); }
+    .btn-nav {
+      padding: 8px 22px; border-radius: 99px;
+      background: var(--accent); color: #06080f;
+      font-size: .85rem; font-weight: 700;
+      text-decoration: none; transition: opacity .2s;
+    }
+    .btn-nav:hover { opacity: .85; }
+
+    /* ── HERO ────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 120px 24px 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(34,211,238,.14), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(8,145,178,.08), transparent);
+    }
+    /* grid overlay */
+    .hero::after {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+    .hero-inner { position: relative; z-index: 1; max-width: 760px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 99px;
+      background: rgba(34,211,238,.1); border: 1px solid rgba(34,211,238,.25);
+      color: var(--accent); font-size: .78rem; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .hero-badge::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      line-height: 1.15; font-weight: 900;
+      color: var(--fg); margin-bottom: 24px;
+    }
+    .hero h1 em { font-style: italic; color: var(--accent); }
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      color: var(--fg-muted); line-height: 1.75;
+      max-width: 560px; margin: 0 auto 40px;
+    }
+    .hero-cta { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      padding: 14px 36px; border-radius: 99px;
+      background: var(--accent); color: #06080f;
+      font-size: 1rem; font-weight: 700; text-decoration: none;
+      box-shadow: 0 0 32px rgba(34,211,238,.3);
+      transition: box-shadow .2s, transform .15s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 48px rgba(34,211,238,.5); transform: translateY(-2px); }
+    .btn-outline {
+      padding: 14px 36px; border-radius: 99px;
+      border: 1px solid rgba(34,211,238,.35);
+      background: rgba(34,211,238,.06); color: var(--accent);
+      font-size: 1rem; font-weight: 600; text-decoration: none;
+      transition: background .2s, border-color .2s, transform .15s;
+    }
+    .btn-outline:hover { background: rgba(34,211,238,.14); border-color: var(--accent); transform: translateY(-2px); }
+
+    /* ── STATS STRIP ─────────────────────────── */
+    .stats-strip {
+      display: flex; justify-content: center; gap: 48px;
+      flex-wrap: wrap; padding: 0 24px 80px;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem; font-weight: 900; color: var(--accent);
+      line-height: 1;
+    }
+    .stat-label { font-size: .8rem; color: var(--fg-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .07em; }
+
+    /* ── SECTION SCAFFOLDING ─────────────────── */
+    section { padding: 96px 24px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: .75rem; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900;
+      color: var(--fg); margin-bottom: 16px;
+    }
+    .section-sub { font-size: 1.05rem; color: var(--fg-muted); max-width: 560px; line-height: 1.7; }
+
+    /* ── FEATURES ────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px; margin-top: 56px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 26px;
+      transition: border-color .25s, transform .2s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute; inset: 0; border-radius: inherit;
+      background: radial-gradient(circle at top left, rgba(34,211,238,.07), transparent 60%);
+      opacity: 0; transition: opacity .3s;
+    }
+    .feature-card:hover { border-color: rgba(34,211,238,.35); transform: translateY(-4px); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 16px;
+      background: rgba(34,211,238,.1); border: 1px solid rgba(34,211,238,.2);
+    }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; color: var(--fg); margin-bottom: 8px; }
+    .feature-card p { font-size: .88rem; color: var(--fg-muted); line-height: 1.65; }
+
+    /* ── PRICING ─────────────────────────────── */
+    #pricing { background: var(--surface); }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px; margin-top: 56px;
+    }
+    .pricing-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      position: relative;
+      transition: border-color .25s, transform .2s;
+    }
+    .pricing-card:hover { border-color: rgba(34,211,238,.3); transform: translateY(-4px); }
+    .pricing-card.featured {
+      border-color: var(--accent);
+      box-shadow: 0 0 40px rgba(34,211,238,.15);
+    }
+    .pricing-badge {
+      position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #06080f;
+      font-size: .72rem; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; padding: 4px 14px; border-radius: 99px;
+      white-space: nowrap;
+    }
+    .pricing-name { font-size: .8rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+    .pricing-price {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem; font-weight: 900; color: var(--fg); line-height: 1;
+    }
+    .pricing-price span { font-size: 1.1rem; font-weight: 400; color: var(--fg-muted); }
+    .pricing-sub { font-size: .82rem; color: var(--fg-muted); margin: 8px 0 24px; }
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .pricing-features li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: .88rem; color: var(--fg-muted);
+    }
+    .pricing-features li::before {
+      content: '✓'; width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.3);
+      color: var(--green); font-size: .72rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .discount-note {
+      margin-top: 24px; padding: 16px 20px;
+      background: rgba(34,211,238,.07); border: 1px solid rgba(34,211,238,.2);
+      border-radius: var(--radius-sm);
+      font-size: .85rem; color: var(--fg-muted); text-align: center;
+    }
+    .discount-note strong { color: var(--accent); }
+
+    /* ── HOW IT WORKS ────────────────────────── */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px; margin-top: 56px; }
+    .step { text-align: center; }
+    .step-num {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #06080f; font-size: 1.3rem; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 24px rgba(34,211,238,.3);
+    }
+    .step h3 { font-size: 1rem; font-weight: 700; color: var(--fg); margin-bottom: 8px; }
+    .step p { font-size: .85rem; color: var(--fg-muted); line-height: 1.6; }
+
+    /* ── CTA BANNER ──────────────────────────── */
+    .cta-banner {
+      background: linear-gradient(135deg, rgba(34,211,238,.1), rgba(8,145,178,.06));
+      border: 1px solid rgba(34,211,238,.2);
+      border-radius: var(--radius);
+      padding: 56px 40px; text-align: center; margin-top: 0;
+    }
+    .cta-banner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900;
+      color: var(--fg); margin-bottom: 16px;
+    }
+    .cta-banner p { color: var(--fg-muted); font-size: 1rem; margin-bottom: 32px; }
+
+    /* ── FOOTER ──────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+      color: var(--fg-muted); font-size: .82rem;
+    }
+    footer a { color: var(--fg-muted); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+
+    /* ── MOBILE ──────────────────────────────── */
+    @media (max-width: 640px) {
+      nav { padding: 16px 20px; }
+      .nav-links { gap: 16px; }
+      .nav-links a:not(.btn-nav) { display: none; }
+      section { padding: 72px 20px; }
+      .stats-strip { gap: 32px; }
+      .cta-banner { padding: 40px 24px; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="/" class="nav-logo">Rewrite<span>Academy</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#how">How It Works</a>
+    <a href="/login" class="btn-nav">Sign In</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Now enrolling for 2026</div>
+    <h1>Your matric results<br>don't define you.<br><em>Your rewrite does.</em></h1>
+    <p>Rewrite Academy is a personalised matric rewrite platform — structured timetables, subject tracking, and progress dashboards built for students who are ready to pass.</p>
+    <div class="hero-cta">
+      <a href="/login" class="btn-primary">Get Started</a>
+      <a href="#pricing" class="btn-outline">View Pricing</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<div class="stats-strip">
+  <div class="stat">
+    <div class="stat-num">3</div>
+    <div class="stat-label">Core Subjects</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">70%</div>
+    <div class="stat-label">First Month Off</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">6</div>
+    <div class="stat-label">Periods Per Day</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">100%</div>
+    <div class="stat-label">Online Access</div>
+  </div>
+</div>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">What we offer</div>
+    <h2 class="section-title">Everything you need to pass.</h2>
+    <p class="section-sub">All the tools a matric rewrite student and their teacher need — in one clean platform.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Personalised Timetable</h3>
+        <p>A full weekly timetable built around your specific subjects — 6 structured periods per day, Monday to Friday, 7:00–13:00.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Progress Dashboard</h3>
+        <p>Track your assessment scores, subject averages, attendance rate, and academic risk level — all updated in real time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3>Subject Resources</h3>
+        <p>Access notes, question papers, critical work summaries, and exam prep material — organised by subject directly in your portal.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <h3>Attendance Tracking</h3>
+        <p>Your teacher marks daily attendance and you can see your attendance rate at any time from your student dashboard.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎓</div>
+        <h3>Teacher Admin Portal</h3>
+        <p>Teachers get a full dashboard — enroll students, capture marks, manage payments, and monitor who needs support most.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Access Anywhere</h3>
+        <p>No app download needed. Works on your phone, tablet, or laptop — as long as you have a browser and internet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-label">Transparent pricing</div>
+    <h2 class="section-title">Affordable for every student.</h2>
+    <p class="section-sub">Pay per subject. First month heavily discounted. Bundle 4 or more subjects and save even more.</p>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-name">1 Subject</div>
+        <div class="pricing-price">R250<span>/month</span></div>
+        <div class="pricing-sub">Full access for one subject</div>
+        <ul class="pricing-features">
+          <li>Personalised timetable</li>
+          <li>Subject resources</li>
+          <li>Assessment tracking</li>
+          <li>Attendance monitoring</li>
+        </ul>
+        <a href="/login" class="btn-outline" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px">Enroll Now</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Most Popular</div>
+        <div class="pricing-name">4+ Subjects</div>
+        <div class="pricing-price">R800<span>/month</span></div>
+        <div class="pricing-sub">4 subjects · 20% bundle discount</div>
+        <ul class="pricing-features">
+          <li>Everything in single subject</li>
+          <li>20% off total monthly fee</li>
+          <li>Full weekly timetable</li>
+          <li>Priority teacher support</li>
+        </ul>
+        <a href="/login" class="btn-primary" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px">Enroll Now</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-name">First Month</div>
+        <div class="pricing-price" style="color:var(--green)">70%<span> off</span></div>
+        <div class="pricing-sub">Introductory offer · any subjects</div>
+        <ul class="pricing-features">
+          <li>1 subject → R75 first month</li>
+          <li>4 subjects → R240 first month</li>
+          <li>No hidden fees</li>
+          <li>Cancel anytime</li>
+        </ul>
+        <a href="/login" class="btn-outline" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px;border-color:rgba(74,222,128,.4);color:var(--green)">Claim Offer</a>
+      </div>
+    </div>
+
+    <div class="discount-note">
+      Choose <strong>4 or more subjects</strong> and get a permanent <strong>20% discount</strong> on your monthly fee every month.
+      5 subjects = R1 000 → <strong>R800/month</strong>.
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how">
+  <div class="container">
+    <div class="section-label">Simple process</div>
+    <h2 class="section-title">Up and running in minutes.</h2>
+    <p class="section-sub">No setup required on your side. Your teacher enrolls you and your portal is ready immediately.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Contact Us</h3>
+        <p>Reach out via WhatsApp or email to confirm your subjects and enrolment for the rewrite year.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Get Your Login</h3>
+        <p>Your teacher creates your student account. You receive your student ID and password to sign in.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Access Your Portal</h3>
+        <p>Log in at rewrite-academy.onrender.com. Your timetable, subjects, and dashboard are waiting.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Start Studying</h3>
+        <p>Follow your daily timetable, access resources, track your progress, and prepare to pass.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA BANNER ── -->
+<section style="padding: 0 24px 96px;">
+  <div class="container">
+    <div class="cta-banner">
+      <h2>Ready to rewrite your future?</h2>
+      <p>Join Rewrite Academy today. First month 70% off. No excuses.</p>
+      <a href="/login" class="btn-primary">Sign In to Your Portal</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div>
+    <strong style="color:var(--fg)">Rewrite Academy</strong> &nbsp;·&nbsp; Matric Rewrite Support Platform
+  </div>
+  <div style="display:flex;gap:24px;">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/login">Sign In</a>
+  </div>
+  <div>&#169; 2026 Rewrite Academy. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

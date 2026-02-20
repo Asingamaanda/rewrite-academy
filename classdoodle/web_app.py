@@ -171,9 +171,16 @@ def health():
     return 'OK', 200
 
 
-# ==================== ADMIN DASHBOARD ====================
+# ==================== PUBLIC LANDING PAGE ====================
 
 @app.route('/')
+def landing():
+    return render_template('landing.html')
+
+
+# ==================== ADMIN DASHBOARD ====================
+
+@app.route('/dashboard')
 @admin_required
 def dashboard():
     today = date.today()
