@@ -1,82 +1,125 @@
 {% extends "base.html" %}
+{% block title %}Timetable — Rewrite Academy{% endblock %}
 
-{% block title %}Timetable - ClassDoodle{% endblock %}
+{% block extra_css %}
+<style>
+.day-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+.day-header {
+    padding: 0.9rem 1.25rem;
+    background: rgba(34,211,238,0.05);
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+}
+.timetable-row {
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    border-bottom: 1px solid rgba(34,211,238,0.06);
+    gap: 1rem;
+}
+.timetable-row:last-child { border-bottom: none; }
+.timetable-row.break-row  { background: rgba(245,158,11,0.05); }
+.timetable-row.wrap-row   { background: rgba(16,185,129,0.04); }
+.time-slot {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-faint);
+    min-width: 110px;
+    font-variant-numeric: tabular-nums;
+}
+.subject-label { font-size: 0.875rem; color: var(--text-muted); }
+.subject-grid-subj {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+.subj-tile {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    text-align: center;
+}
+.subj-tile .sv { font-size: 1.5rem; font-weight: 700; color: #c084fc; font-family: 'Playfair Display', serif; }
+.subj-tile .sl { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+</style>
+{% endblock %}
 
 {% block content %}
-<h2 style="color: #667eea; margin-bottom: 30px;">📅 Weekly Timetable</h2>
-<p style="color: #666; margin-bottom: 20px;">7:00 AM - 1:00 PM Daily Schedule</p>
-
-<div style="margin-bottom: 30px;">
-    <h3 style="color: #667eea; margin-bottom: 15px;">📚 Subject Distribution</h3>
-    <div class="stat-cards">
-        {% for subject, details in subjects.items() %}
-        <div class="stat-card card-purple">
-            <h3>{{ details.periods_per_week }}</h3>
-            <p>{{ subject }}</p>
-            <small style="opacity: 0.8;">periods/week</small>
-        </div>
-        {% endfor %}
+<div class="page-header">
+    <div>
+        <h1>📅 Weekly Timetable</h1>
+        <p>7:00 AM – 1:00 PM daily schedule</p>
     </div>
 </div>
 
+<!-- Subject distribution -->
+<div class="subject-grid-subj">
+    {% for subject, details in subjects.items() %}
+    <div class="subj-tile">
+        <div class="sv">{{ details.periods_per_week }}</div>
+        <div class="sl">{{ subject }}<br><span style="color:var(--text-faint);font-size:0.72rem;">periods/week</span></div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Day schedule -->
 {% for day, classes in weekly_schedule.items() %}
-<div style="margin-bottom: 30px;">
-    <h3 style="color: #667eea; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
-        {{ day }}
-    </h3>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>Time</th>
-                <th>Subject/Activity</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>07:00 - 07:50</td>
-                <td>📚 {{ classes[0] }}</td>
-            </tr>
-            <tr>
-                <td>07:50 - 08:40</td>
-                <td>📚 {{ classes[1] }}</td>
-            </tr>
-            <tr style="background: #fffbea;">
-                <td>08:40 - 09:00</td>
-                <td>☕ TEA BREAK</td>
-            </tr>
-            <tr>
-                <td>09:00 - 09:50</td>
-                <td>📚 {{ classes[2] }}</td>
-            </tr>
-            <tr>
-                <td>09:50 - 10:40</td>
-                <td>📚 {{ classes[3] }}</td>
-            </tr>
-            <tr>
-                <td>10:40 - 11:30</td>
-                <td>📚 {{ classes[4] }}</td>
-            </tr>
-            <tr>
-                <td>11:30 - 12:20</td>
-                <td>📚 {{ classes[5] }}</td>
-            </tr>
-            <tr style="background: #f0fff4;">
-                <td>12:20 - 13:00</td>
-                <td>🎯 {{ classes[6] }}</td>
-            </tr>
-        </tbody>
-    </table>
+<div class="day-card">
+    <div class="day-header">{{ day }}</div>
+    <div class="timetable-row">
+        <span class="time-slot">07:00 – 07:50</span>
+        <span class="subject-label">📚 {{ classes[0] }}</span>
+    </div>
+    <div class="timetable-row">
+        <span class="time-slot">07:50 – 08:40</span>
+        <span class="subject-label">📚 {{ classes[1] }}</span>
+    </div>
+    <div class="timetable-row break-row">
+        <span class="time-slot">08:40 – 09:00</span>
+        <span class="subject-label">☕ Tea Break</span>
+    </div>
+    <div class="timetable-row">
+        <span class="time-slot">09:00 – 09:50</span>
+        <span class="subject-label">📚 {{ classes[2] }}</span>
+    </div>
+    <div class="timetable-row">
+        <span class="time-slot">09:50 – 10:40</span>
+        <span class="subject-label">📚 {{ classes[3] }}</span>
+    </div>
+    <div class="timetable-row">
+        <span class="time-slot">10:40 – 11:30</span>
+        <span class="subject-label">📚 {{ classes[4] }}</span>
+    </div>
+    <div class="timetable-row">
+        <span class="time-slot">11:30 – 12:20</span>
+        <span class="subject-label">📚 {{ classes[5] }}</span>
+    </div>
+    <div class="timetable-row wrap-row">
+        <span class="time-slot">12:20 – 13:00</span>
+        <span class="subject-label">🎯 {{ classes[6] }}</span>
+    </div>
 </div>
 {% endfor %}
 
-<div style="padding: 20px; background: #e7f3ff; border-radius: 10px; margin-top: 30px;">
-    <h4 style="color: #667eea; margin-bottom: 15px;">ℹ️ Schedule Info</h4>
-    <ul style="color: #666; line-height: 2;">
-        <li><strong>Teaching Hours:</strong> 5 hours 20 minutes per day</li>
-        <li><strong>Break Time:</strong> 20 minutes</li>
-        <li><strong>Wrap-up/Review:</strong> 40 minutes</li>
-        <li><strong>Total Contact Time:</strong> 6 hours daily</li>
+<!-- Info panel -->
+<div style="background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.15);border-radius:var(--radius-md);padding:1.25rem 1.5rem;margin-top:0.5rem;">
+    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.75rem;">ℹ️ Schedule Info</div>
+    <ul style="list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.5rem;">
+        <li style="font-size:0.875rem;color:var(--text-muted);"><span style="color:var(--text);font-weight:600;">Teaching Hours</span><br>5 h 20 min/day</li>
+        <li style="font-size:0.875rem;color:var(--text-muted);"><span style="color:var(--text);font-weight:600;">Break Time</span><br>20 minutes</li>
+        <li style="font-size:0.875rem;color:var(--text-muted);"><span style="color:var(--text);font-weight:600;">Wrap-up / Review</span><br>40 minutes</li>
+        <li style="font-size:0.875rem;color:var(--text-muted);"><span style="color:var(--text);font-weight:600;">Total Contact Time</span><br>6 hours daily</li>
     </ul>
 </div>
 {% endblock %}

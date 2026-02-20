@@ -322,6 +322,7 @@
     <a href="#how">How It Works</a>
     {% if user_role %}
       <a href="{{ portal_url }}" class="btn-nav">My Portal</a>
+      <a href="/logout" style="background:rgba(239,68,68,0.12);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);padding:7px 16px;border-radius:6px;text-decoration:none;font-size:0.875rem;font-weight:600;transition:background 0.18s" onmouseover="this.style.background='rgba(239,68,68,0.22)'" onmouseout="this.style.background='rgba(239,68,68,0.12)'">Sign Out</a>
     {% else %}
       <a href="/apply" style="color:var(--fg-muted);font-size:.9rem;text-decoration:none;transition:color .2s" onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#94a3b8'">Apply</a>
       <a href="/login" class="btn-nav">Sign In</a>

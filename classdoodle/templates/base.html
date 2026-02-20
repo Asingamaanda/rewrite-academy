@@ -702,6 +702,38 @@
         .mt-4 { margin-top: 2rem; }
         .w-full { width: 100%; }
 
+        /* ─── Legacy shim: keep old btn / filter-bar classes working ─── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 0.55rem 1.1rem;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; border: none;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            transition: all 0.18s ease;
+        }
+        .btn:hover { border-color: var(--border-hover); color: var(--text); }
+        .btn-success { background: rgba(16,185,129,0.12) !important; color: #34d399 !important; border-color: rgba(16,185,129,0.3) !important; }
+        .btn-success:hover { background: rgba(16,185,129,0.22) !important; }
+        .filter-bar { display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem 1.25rem; margin-bottom:1.75rem; }
+        table { width:100%; border-collapse:collapse; }
+        table th { text-align:left; padding:10px 14px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); border-bottom:1px solid var(--border); }
+        table td { padding:12px 14px; font-size:0.875rem; color:var(--text-muted); border-bottom:1px solid rgba(34,211,238,0.06); vertical-align:middle; }
+        table tr:hover td { background:rgba(34,211,238,0.03); color:var(--text); }
+        table tr:last-child td { border-bottom:none; }
+        .stat-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+        .stat-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.25rem 1.5rem; text-align:center; }
+        .stat-card h3 { font-size:1.6rem; font-weight:700; color:var(--text); }
+        .stat-card p { font-size:0.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+        .card-blue h3  { color: var(--accent); }
+        .card-green h3 { color: #34d399; }
+        .card-red h3   { color: #fca5a5; }
+        .card-yellow h3,.card-amber h3 { color: #fbbf24; }
+        .card-purple h3 { color: #c084fc; }
+
         /* ─────────────────────────────────────────
            RESPONSIVE SIDEBAR
         ───────────────────────────────────────── */
@@ -725,8 +757,69 @@
             .sidebar-footer { padding: 12px 8px; }
             .sidebar { overflow: visible; }
         }
+
+        /* ── Tablet (≤ 768px) ── */
+        @media (max-width: 768px) {
+            .main-content { padding: 1.25rem 1.1rem 3rem; }
+            .has-sidebar .main-content { padding-top: 1.5rem; }
+            .page-header h1 { font-size: 1.35rem; }
+            .section-title { font-size: 1.5rem; }
+            .grid-cols-2 { grid-template-columns: 1fr; }
+        }
+
+        /* ── Phone (≤ 480px) ── */
+        @media (max-width: 480px) {
+            :root { --sidebar-w: 0px; }
+            .sidebar { display: none; }
+            .has-sidebar .content-wrapper { margin-left: 0; }
+            .main-content { padding: 1rem 0.85rem 2.5rem; }
+            .has-sidebar .main-content { padding-top: 1rem; }
+            .page-header { margin-bottom: 1.25rem; padding-bottom: 0.85rem; }
+            .page-header h1 { font-size: 1.2rem; }
+            .flash-messages { left: 0.75rem; right: 0.75rem; max-width: 100%; }
+            .stat-cards { grid-template-columns: 1fr 1fr; }
+        }
+        /* ── Mobile admin bar (phones ≤ 480px) ── */
+        .mobile-admin-bar {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 52px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            z-index: 950;
+            padding: 0 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .mobile-menu-drawer {
+            display: none;
+            position: fixed;
+            top: 52px; left: 0; right: 0;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            z-index: 949;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .mobile-menu-drawer.open { display: flex; }
+        .mobile-menu-drawer a {
+            padding: 13px 1.25rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s ease;
+        }
+        .mobile-menu-drawer a:hover { background: rgba(34,211,238,0.06); color: var(--text); }
+        @media (max-width: 480px) {
+            .mobile-admin-bar { display: flex; }
+            .has-sidebar .main-content { padding-top: 68px !important; }
+        }
+
     </style>
-    
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -736,6 +829,23 @@
 
     {# ── ADMIN SIDEBAR ───────────────────────────────────────────── #}
     {% if _role == 'admin' %}
+
+    {# Mobile admin top bar (visible only at ≤480px when sidebar is hidden) #}
+    <div class="mobile-admin-bar" id="mobileAdminBar">
+        <a href="/" style="font-family:'Playfair Display',serif;font-weight:700;color:var(--accent);text-decoration:none;font-size:1rem;">Rewrite</a>
+        <button onclick="document.getElementById('mobileMenu').classList.toggle('open')" style="background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;padding:4px;">☰</button>
+    </div>
+    <div class="mobile-menu-drawer" id="mobileMenu">
+        <a href="/">⊞ Dashboard</a>
+        <a href="/students">👤 Students</a>
+        <a href="/attendance">✓ Attendance</a>
+        <a href="/assessments">📋 Assessments</a>
+        <a href="/payments">💳 Payments</a>
+        <a href="/admin/applications">📝 Applications</a>
+        <a href="/admin/risk-alerts">⚠️ Risk &amp; Alerts</a>
+        <a href="/logout" style="color:#fca5a5;">⏻ Sign Out</a>
+    </div>
+
     <aside class="sidebar">
         <a href="/" class="sidebar-brand">
             <div class="sidebar-logo">R</div>
