@@ -4,7 +4,7 @@ services:
     runtime: python
     pythonVersion: 3.11.0
     buildCommand: pip install -r requirements.txt
-    startCommand: cd classdoodle && gunicorn web_app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 4
+    startCommand: gunicorn --chdir classdoodle web_app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 4
     healthCheckPath: /health
     envVars:
       - key: SECRET_KEY
