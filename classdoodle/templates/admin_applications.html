@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Applications — Rewrite Academy{% endblock %}
+
+{% block content %}
+<style>
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;align-items:center}
+  .filter-btn{padding:7px 18px;border-radius:99px;font-size:.78rem;font-weight:700;cursor:pointer;
+              border:1px solid var(--border);background:transparent;color:var(--fg-muted);
+              text-decoration:none;transition:border-color .2s,color .2s,background .2s}
+  .filter-btn:hover,.filter-btn.active{border-color:var(--accent);color:var(--fg);background:rgba(34,211,238,.08)}
+  .filter-btn.active{background:rgba(34,211,238,.12)}
+  .app-table{width:100%;border-collapse:collapse}
+  .app-table th{font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--fg-muted);
+                padding:8px 12px;border-bottom:1px solid var(--border);text-align:left}
+  .app-table td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.04);
+                font-size:.85rem;color:var(--fg-muted);vertical-align:top}
+  .app-table tr:hover td{background:rgba(34,211,238,.03)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.68rem;font-weight:700;
+        text-transform:uppercase;letter-spacing:.06em;border:1px solid;margin:2px 2px 0 0}
+  .pill-new       {background:rgba(34,211,238,.1);color:#22d3ee;border-color:rgba(34,211,238,.25)}
+  .pill-contacted {background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.25)}
+  .pill-enrolled  {background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.25)}
+  .pill-declined  {background:rgba(248,113,113,.1);color:#f87171;border-color:rgba(248,113,113,.25)}
+  .pill-subj      {background:rgba(34,211,238,.07);color:#22d3ee;border-color:rgba(34,211,238,.15)}
+  .subject-cell span{display:inline-block}
+  .btn-sm{padding:5px 12px;border-radius:6px;font-size:.72rem;font-weight:700;cursor:pointer;
+          border:none;margin:2px}
+  .btn-contact{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25)}
+  .btn-contact:hover{background:rgba(251,191,36,.22)}
+  .btn-enroll{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)}
+  .btn-enroll:hover{background:rgba(74,222,128,.22)}
+  .btn-decline{background:rgba(248,113,113,.08);color:#f87171;border:1px solid rgba(248,113,113,.2)}
+  .btn-decline:hover{background:rgba(248,113,113,.18)}
+  .empty-box{text-align:center;padding:48px;color:var(--fg-muted);font-size:.92rem}
+</style>
+
+<!-- PAGE HEADER -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+  <div>
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px">Enrolments</div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:900;color:var(--fg)">
+      Applications
+      {% if new_count %}
+        <span style="margin-left:8px;background:rgba(34,211,238,.15);color:#22d3ee;
+                     border:1px solid rgba(34,211,238,.3);padding:2px 10px;
+                     border-radius:99px;font-size:.7rem;font-weight:800;vertical-align:middle">
+          {{ new_count }} new
+        </span>
+      {% endif %}
+    </h1>
+  </div>
+  <a href="/apply" target="_blank"
+     style="padding:9px 20px;border-radius:8px;background:rgba(34,211,238,.1);
+            border:1px solid rgba(34,211,238,.25);color:var(--accent);font-size:.82rem;
+            font-weight:700;text-decoration:none">
+    ↗ View Public Form
+  </a>
+</div>
+
+<!-- FILTER TABS -->
+<div class="filter-bar">
+  <a href="/admin/applications" class="filter-btn {% if not status_filter %}active{% endif %}">All ({{ total_count }})</a>
+  <a href="/admin/applications?status=new"       class="filter-btn {% if status_filter=='new' %}active{% endif %}">New</a>
+  <a href="/admin/applications?status=contacted" class="filter-btn {% if status_filter=='contacted' %}active{% endif %}">Contacted</a>
+  <a href="/admin/applications?status=enrolled"  class="filter-btn {% if status_filter=='enrolled' %}active{% endif %}">Enrolled</a>
+  <a href="/admin/applications?status=declined"  class="filter-btn {% if status_filter=='declined' %}active{% endif %}">Declined</a>
+</div>
+
+<!-- TABLE -->
+<div class="card-cinematic" style="padding:0;overflow:hidden">
+  {% if applications %}
+  <div style="overflow-x:auto">
+    <table class="app-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Applicant</th>
+          <th>Contact</th>
+          <th>Subjects</th>
+          <th>Year / School</th>
+          <th>Applied</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td style="color:var(--fg-muted);font-size:.75rem;">{{ app.id }}</td>
+          <td>
+            <div style="font-weight:700;color:var(--fg)">{{ app.full_name }}</div>
+            {% if app.parent_name %}
+            <div style="font-size:.75rem;color:var(--fg-muted)">Parent: {{ app.parent_name }}</div>
+            {% endif %}
+            {% if app.message %}
+            <div style="margin-top:5px;font-size:.75rem;color:var(--fg-muted);
+                        background:rgba(255,255,255,.03);border-radius:5px;padding:5px 8px;
+                        max-width:200px;line-height:1.5;">
+              "{{ app.message[:100] }}{% if app.message|length > 100 %}…{% endif %}"
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div><a href="tel:{{ app.phone }}" style="color:var(--accent);text-decoration:none;font-weight:600">{{ app.phone }}</a></div>
+            {% if app.parent_phone %}<div style="font-size:.75rem"><a href="tel:{{ app.parent_phone }}" style="color:var(--fg-muted);text-decoration:none">{{ app.parent_phone }}</a></div>{% endif %}
+            {% if app.email %}<div style="font-size:.75rem;color:var(--fg-muted)">{{ app.email }}</div>{% endif %}
+          </td>
+          <td class="subject-cell">
+            {% for subj in app.subjects.split(',') %}
+              <span class="pill pill-subj">{{ subj.strip() }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            <div style="font-weight:600;color:var(--fg)">{{ app.year_failed or '—' }}</div>
+            <div style="font-size:.75rem;color:var(--fg-muted)">{{ app.previous_school or '—' }}</div>
+          </td>
+          <td style="white-space:nowrap;font-size:.78rem">{{ app.created_at[:10] }}</td>
+          <td>
+            <span class="pill pill-{{ app.status }}">{{ app.status }}</span>
+          </td>
+          <td>
+            {% if app.status == 'new' %}
+            <form method="POST" action="/admin/applications/{{ app.id }}/status" style="display:inline">
+              <input type="hidden" name="status" value="contacted">
+              <button type="submit" class="btn-sm btn-contact">Contacted</button>
+            </form>
+            {% endif %}
+            {% if app.status in ('new','contacted') %}
+            <form method="POST" action="/admin/applications/{{ app.id }}/status" style="display:inline">
+              <input type="hidden" name="status" value="enrolled">
+              <button type="submit" class="btn-sm btn-enroll">Enrolled ✓</button>
+            </form>
+            <form method="POST" action="/admin/applications/{{ app.id }}/status" style="display:inline">
+              <input type="hidden" name="status" value="declined">
+              <button type="submit" class="btn-sm btn-decline">Decline</button>
+            </form>
+            {% endif %}
+            {% if app.status == 'declined' %}
+            <form method="POST" action="/admin/applications/{{ app.id }}/status" style="display:inline">
+              <input type="hidden" name="status" value="new">
+              <button type="submit" class="btn-sm btn-contact">Reopen</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-box">
+    {% if status_filter %}
+      No applications with status "{{ status_filter }}".
+      <a href="/admin/applications" style="color:var(--accent)">View all</a>
+    {% else %}
+      No applications yet.
+      <a href="/apply" target="_blank" style="color:var(--accent)">Share the application link</a> to get started.
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- SHARE LINK BOX -->
+<div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+            padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <div style="flex:1;min-width:200px">
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px">Public Application Link</div>
+    <code style="font-size:.85rem;color:var(--fg)">https://rewrite-academy.onrender.com/apply</code>
+  </div>
+  <button onclick="navigator.clipboard.writeText('https://rewrite-academy.onrender.com/apply').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Link',2000)})"
+          style="padding:8px 20px;border-radius:8px;border:1px solid rgba(34,211,238,.3);
+                 background:rgba(34,211,238,.08);color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer">
+    Copy Link
+  </button>
+</div>
+{% endblock %}

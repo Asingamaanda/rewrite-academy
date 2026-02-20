@@ -320,7 +320,12 @@
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="#how">How It Works</a>
-    <a href="{{ portal_url }}" class="btn-nav">{% if user_role %}My Portal{% else %}Sign In{% endif %}</a>
+    {% if user_role %}
+      <a href="{{ portal_url }}" class="btn-nav">My Portal</a>
+    {% else %}
+      <a href="/apply" style="color:var(--fg-muted);font-size:.9rem;text-decoration:none;transition:color .2s" onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#94a3b8'">Apply</a>
+      <a href="/login" class="btn-nav">Sign In</a>
+    {% endif %}
   </div>
 </nav>
 
@@ -334,10 +339,13 @@
     <h1>Your matric results<br>don't define you.<br><em>Your rewrite does.</em></h1>
     <p>Rewrite Academy is a personalised matric rewrite platform — structured timetables, subject tracking, and progress dashboards built for students who are ready to pass.</p>
     <div class="hero-cta">
-      <a href="{{ portal_url }}" class="btn-primary">
-        {% if user_role %}Go to My Portal{% else %}Get Started{% endif %}
-      </a>
-      <a href="#pricing" class="btn-outline">View Pricing</a>
+      {% if user_role %}
+        <a href="{{ portal_url }}" class="btn-primary">Go to My Portal</a>
+        <a href="#pricing" class="btn-outline">View Pricing</a>
+      {% else %}
+        <a href="/apply" class="btn-primary">Apply Now — It's Free</a>
+        <a href="/login" class="btn-outline">Sign In</a>
+      {% endif %}
     </div>
   </div>
 </section>
@@ -422,7 +430,7 @@
           <li>Assessment tracking</li>
           <li>Attendance monitoring</li>
         </ul>
-        <a href="{{ portal_url }}" class="btn-outline" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px">{% if user_role %}My Portal{% else %}Enroll Now{% endif %}</a>
+        <a href="{{ '/apply' if not user_role else portal_url }}" class="btn-outline" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px">{% if user_role %}My Portal{% else %}Apply Now{% endif %}</a>
       </div>
 
       <div class="pricing-card featured">
@@ -436,7 +444,7 @@
           <li>Full weekly timetable</li>
           <li>Priority teacher support</li>
         </ul>
-        <a href="{{ portal_url }}" class="btn-primary" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px">{% if user_role %}My Portal{% else %}Enroll Now{% endif %}</a>
+        <a href="{{ '/apply' if not user_role else portal_url }}" class="btn-primary" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px">{% if user_role %}My Portal{% else %}Apply Now{% endif %}</a>
       </div>
 
       <div class="pricing-card">
@@ -449,7 +457,7 @@
           <li>No hidden fees</li>
           <li>Cancel anytime</li>
         </ul>
-        <a href="{{ portal_url }}" class="btn-outline" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px;border-color:rgba(74,222,128,.4);color:var(--green)">{% if user_role %}My Portal{% else %}Claim Offer{% endif %}</a>
+        <a href="{{ '/apply' if not user_role else portal_url }}" class="btn-outline" style="display:block;text-align:center;border-radius:var(--radius-sm);padding:11px;border-color:rgba(74,222,128,.4);color:var(--green)">{% if user_role %}My Portal{% else %}Apply Now{% endif %}</a>
       </div>
     </div>
 
@@ -497,8 +505,8 @@
   <div class="container">
     <div class="cta-banner">
       <h2>Ready to rewrite your future?</h2>
-      <p>Join Rewrite Academy today. First month 70% off. No excuses.</p>
-      <a href="{{ portal_url }}" class="btn-primary">{% if user_role %}Go to My Portal{% else %}Sign In to Your Portal{% endif %}</a>
+      <p>Fill in the application form. The teacher will call you within 24 hours.</p>
+      <a href="{{ '/apply' if not user_role else portal_url }}" class="btn-primary">{% if user_role %}Go to My Portal{% else %}Apply Now — It's Free{% endif %}</a>
     </div>
   </div>
 </section>
@@ -511,7 +519,8 @@
   <div style="display:flex;gap:24px;">
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
-    <a href="{{ portal_url }}">{% if user_role %}My Portal{% else %}Sign In{% endif %}</a>
+    <a href="{{ '/apply' if not user_role else portal_url }}">{% if user_role %}My Portal{% else %}Apply{% endif %}</a>
+    <a href="/login">Sign In</a>
   </div>
   <div>&#169; 2026 Rewrite Academy. All rights reserved.</div>
 </footer>

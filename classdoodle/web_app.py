@@ -17,6 +17,7 @@ sys.path.append(str(Path(__file__).parent / 'backend'))
 
 from backend.api import ClassDoodleAPI
 from backend import automation
+from backend.mailer import send_application_email
 from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
 
 app = Flask(__name__)
@@ -58,6 +59,22 @@ def _migrate_db():
             file_path TEXT DEFAULT '',
             link_url TEXT DEFAULT '',
             order_num INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS applications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            parent_name TEXT DEFAULT '',
+            parent_phone TEXT DEFAULT '',
+            subjects TEXT NOT NULL,
+            previous_school TEXT DEFAULT '',
+            year_failed TEXT DEFAULT '',
+            message TEXT DEFAULT '',
+            status TEXT DEFAULT 'new',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -195,6 +212,60 @@ def landing():
     else:
         portal_url = url_for('login')
     return render_template('landing.html', user_role=role, portal_url=portal_url)
+
+
+# ==================== PUBLIC APPLICATION FORM ====================
+
+@app.route('/apply', methods=['GET', 'POST'])
+def apply():
+    if request.method == 'GET':
+        return render_template('apply.html', submitted=False)
+
+    # POST — save + email
+    full_name      = request.form.get('full_name', '').strip()
+    phone          = request.form.get('phone', '').strip()
+    email          = request.form.get('email', '').strip()
+    parent_name    = request.form.get('parent_name', '').strip()
+    parent_phone   = request.form.get('parent_phone', '').strip()
+    subjects_list  = request.form.getlist('subjects')
+    previous_school = request.form.get('previous_school', '').strip()
+    year_failed    = request.form.get('year_failed', '').strip()
+    message        = request.form.get('message', '').strip()
+
+    if not full_name or not phone or not subjects_list:
+        flash('Please fill in your name, phone number, and select at least one subject.', 'error')
+        return render_template('apply.html', submitted=False)
+
+    subjects_str = ', '.join(subjects_list)
+
+    # Save to DB
+    try:
+        conn = get_db()
+        conn.execute("""
+            INSERT INTO applications
+              (full_name, phone, email, parent_name, parent_phone,
+               subjects, previous_school, year_failed, message)
+            VALUES (?,?,?,?,?,?,?,?,?)
+        """, (full_name, phone, email, parent_name, parent_phone,
+               subjects_str, previous_school, year_failed, message))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        flash(f'Database error: {e}', 'error')
+        return render_template('apply.html', submitted=False)
+
+    # Send email (non-blocking — silently log failure, don't break UX)
+    application_data = dict(
+        full_name=full_name, phone=phone, email=email,
+        parent_name=parent_name, parent_phone=parent_phone,
+        subjects=subjects_list, previous_school=previous_school,
+        year_failed=year_failed, message=message
+    )
+    ok, err = send_application_email(application_data)
+    if not ok:
+        app.logger.warning(f'Email send failed: {err}')
+
+    return render_template('apply.html', submitted=True, app_name=full_name)
 
 
 # ==================== ADMIN DASHBOARD ====================
@@ -471,6 +542,43 @@ def resolve_alert(alert_id):
     automation.resolve_alert(alert_id)
     flash('Alert resolved.', 'success')
     return redirect(url_for('risk_alerts'))
+
+
+# ==================== APPLICATIONS (ADMIN) ====================
+
+@app.route('/admin/applications')
+@admin_required
+def admin_applications():
+    status_filter = request.args.get('status', '')
+    conn = get_db()
+    if status_filter:
+        apps = conn.execute(
+            "SELECT * FROM applications WHERE status=? ORDER BY created_at DESC",
+            (status_filter,)
+        ).fetchall()
+    else:
+        apps = conn.execute(
+            "SELECT * FROM applications ORDER BY created_at DESC"
+        ).fetchall()
+    new_count   = conn.execute("SELECT COUNT(*) FROM applications WHERE status='new'").fetchone()[0]
+    total_count = conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
+    conn.close()
+    return render_template('admin_applications.html',
+                           applications=[dict(a) for a in apps],
+                           new_count=new_count, total_count=total_count,
+                           status_filter=status_filter)
+
+
+@app.route('/admin/applications/<int:app_id>/status', methods=['POST'])
+@admin_required
+def update_application_status(app_id):
+    new_status = request.form.get('status', 'new')
+    conn = get_db()
+    conn.execute("UPDATE applications SET status=? WHERE id=?", (new_status, app_id))
+    conn.commit()
+    conn.close()
+    flash(f'Application marked as {new_status}.', 'success')
+    return redirect(url_for('admin_applications', status=request.args.get('status', '')))
 
 
 # ==================== TIMETABLE (ADMIN) ====================

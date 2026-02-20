@@ -155,6 +155,24 @@ class ClassDoodleDB:
 
         # ==================== AUTH & PORTAL TABLES ====================
 
+        # Online applications (from public /apply form)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                email TEXT DEFAULT '',
+                parent_name TEXT DEFAULT '',
+                parent_phone TEXT DEFAULT '',
+                subjects TEXT NOT NULL,
+                previous_school TEXT DEFAULT '',
+                year_failed TEXT DEFAULT '',
+                message TEXT DEFAULT '',
+                status TEXT DEFAULT 'new',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # User accounts (admin + teacher + students)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_accounts (
@@ -269,6 +287,24 @@ class ClassDoodleDB:
                 conn.commit()
             except Exception:
                 pass  # Column already exists — ignore
+
+        # Create applications table if this is an older database
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                email TEXT DEFAULT '',
+                parent_name TEXT DEFAULT '',
+                parent_phone TEXT DEFAULT '',
+                subjects TEXT NOT NULL,
+                previous_school TEXT DEFAULT '',
+                year_failed TEXT DEFAULT '',
+                message TEXT DEFAULT '',
+                status TEXT DEFAULT 'new',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         # Seed default admin account if not exists
         from werkzeug.security import generate_password_hash

@@ -771,6 +771,9 @@
             </a>
 
             <div class="sidebar-section"><div class="sidebar-section-label">Management</div></div>
+            <a href="/admin/applications" class="sidebar-link {% if 'applications' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">📝</span><span>Applications</span>
+            </a>
             <a href="/payments" class="sidebar-link {% if '/payments' in request.path %}active{% endif %}">
                 <span class="sidebar-icon">💳</span><span>Payments</span>
             </a>
