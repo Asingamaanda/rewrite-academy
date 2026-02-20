@@ -175,7 +175,14 @@ def health():
 
 @app.route('/')
 def landing():
-    return render_template('landing.html')
+    role = session.get('user_role', '')
+    if role == 'admin':
+        portal_url = url_for('dashboard')
+    elif role == 'student':
+        portal_url = url_for('student_home')
+    else:
+        portal_url = url_for('login')
+    return render_template('landing.html', user_role=role, portal_url=portal_url)
 
 
 # ==================== ADMIN DASHBOARD ====================
