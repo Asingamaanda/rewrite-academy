@@ -40,18 +40,13 @@ def _ensure_pool():
                 url = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
                 try:
                     _pool = psycopg2.pool.ThreadedConnectionPool(
-                        0, 10,                          # minconn=0 (lazy), maxconn=10
+                        0, 10,              # minconn=0 (lazy), maxconn=10
                         dsn=url,
-                        # TCP keepalives — drop ghost connections before the pool
-                        # hands them back to callers.
                         keepalives=1,
-                        keepalives_idle=30,             # seconds idle before probing
-                        keepalives_interval=5,          # seconds between probes
-                        keepalives_count=5,             # probes before giving up
-                        connect_timeout=10,             # abort connect after 10 s
-                        # Kill any transaction open for more than 30 s to prevent
-                        # long-lived locks bloating the pool.
-                        options='-c idle_in_transaction_session_timeout=30000',
+                        keepalives_idle=30,
+                        keepalives_interval=5,
+                        keepalives_count=5,
+                        connect_timeout=10,
                     )
                 except Exception as e:
                     raise RuntimeError(f"Cannot connect to PostgreSQL: {e}") from e
