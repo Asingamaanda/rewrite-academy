@@ -1,798 +1,512 @@
-"""
+﻿"""
 ClassDoodle Backend - Database Models
-SQLite database for managing students, attendance, assessments, and payments
+Works with both PostgreSQL (Render) and SQLite (local dev).
+Connection management is handled by backend.db_adapter.
 """
 
-import sqlite3
-from pathlib import Path
 from datetime import datetime, date
-import json
+from backend.db_adapter import (
+    get_connection, release_connection, qexec, fetchone, fetchall,
+    _make_cursor, PH, SERIAL_PK, POSTGRES
+)
+
 
 class ClassDoodleDB:
-    """Main database manager for ClassDoodle"""
-    
-    def __init__(self, db_path="classdoodle/data/classdoodle.db"):
-        self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = None
+    """Main database manager -- connection-per-operation, pool-safe."""
+
+    def __init__(self, db_path=None):   # db_path kept for backward compat, ignored
         self.initialize_database()
-    
-    def get_connection(self):
-        """Get database connection"""
-        if self.conn is None:
-            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            self.conn.row_factory = sqlite3.Row  # Return rows as dictionaries
-        return self.conn
-    
+
     def initialize_database(self):
-        """Create all tables if they don't exist"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        # Students table
-        cursor.execute("""
+        """Create all tables and seed defaults. Idempotent."""
+        conn  = get_connection()
+        cur   = _make_cursor(conn)
+        today = date.today().isoformat()
+
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS students (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id TEXT UNIQUE NOT NULL,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                phone TEXT,
-                parent_name TEXT,
-                parent_phone TEXT,
-                parent_email TEXT,
+                id              {SERIAL_PK},
+                student_id      TEXT UNIQUE NOT NULL,
+                name            TEXT NOT NULL,
+                email           TEXT UNIQUE NOT NULL,
+                phone           TEXT,
+                parent_name     TEXT,
+                parent_phone    TEXT,
+                parent_email    TEXT,
                 registration_date DATE NOT NULL,
-                status TEXT DEFAULT 'active',
-                academic_risk TEXT DEFAULT 'on_track',
+                status          TEXT DEFAULT 'active',
+                academic_risk   TEXT DEFAULT 'on_track',
                 attendance_risk TEXT DEFAULT 'ok',
-                payment_risk TEXT DEFAULT 'pending',
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                payment_risk    TEXT DEFAULT 'pending',
+                notes           TEXT,
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Student subjects (many-to-many relationship)
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS student_subjects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id         {SERIAL_PK},
                 student_id TEXT NOT NULL,
-                subject TEXT NOT NULL,
-                FOREIGN KEY (student_id) REFERENCES students(student_id),
+                subject    TEXT NOT NULL,
                 UNIQUE(student_id, subject)
             )
         """)
-        
-        # Attendance table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS attendance (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id         {SERIAL_PK},
                 student_id TEXT NOT NULL,
-                date DATE NOT NULL,
-                time_slot TEXT NOT NULL,
-                subject TEXT NOT NULL,
-                status TEXT NOT NULL,
-                marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(student_id),
+                date       DATE NOT NULL,
+                time_slot  TEXT NOT NULL,
+                subject    TEXT NOT NULL,
+                status     TEXT NOT NULL,
+                marked_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(student_id, date, time_slot, subject)
             )
         """)
-        
-        # Assessments table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS assessments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id TEXT NOT NULL,
-                subject TEXT NOT NULL,
+                id              {SERIAL_PK},
+                student_id      TEXT NOT NULL,
+                subject         TEXT NOT NULL,
                 assessment_type TEXT NOT NULL,
-                score REAL NOT NULL,
-                max_score REAL DEFAULT 100,
-                weight REAL DEFAULT 1,
-                date DATE NOT NULL,
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(student_id)
+                score           REAL NOT NULL,
+                max_score       REAL DEFAULT 100,
+                weight          REAL DEFAULT 1,
+                date            DATE NOT NULL,
+                notes           TEXT,
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Payments table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS payments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                student_id TEXT NOT NULL,
-                amount REAL NOT NULL,
-                payment_date DATE,
-                due_date DATE,
+                id             {SERIAL_PK},
+                student_id     TEXT NOT NULL,
+                amount         REAL NOT NULL,
+                payment_date   DATE,
+                due_date       DATE,
                 payment_method TEXT,
-                reference TEXT,
-                month_for TEXT NOT NULL,
-                status TEXT DEFAULT 'pending',
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(student_id)
+                reference      TEXT,
+                month_for      TEXT NOT NULL,
+                status         TEXT DEFAULT 'pending',
+                notes          TEXT,
+                created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Marketing leads table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS leads (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                email TEXT,
-                source TEXT NOT NULL,
-                status TEXT DEFAULT 'new',
+                id           {SERIAL_PK},
+                name         TEXT NOT NULL,
+                phone        TEXT NOT NULL,
+                email        TEXT,
+                source       TEXT NOT NULL,
+                status       TEXT DEFAULT 'new',
                 contacted_at TIMESTAMP,
-                enrolled_at TIMESTAMP,
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                enrolled_at  TIMESTAMP,
+                notes        TEXT,
+                created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
-        # Lesson plans table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS lesson_plans (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date DATE NOT NULL,
-                subject TEXT NOT NULL,
-                time_slot TEXT NOT NULL,
-                topic TEXT NOT NULL,
+                id         {SERIAL_PK},
+                date       DATE NOT NULL,
+                subject    TEXT NOT NULL,
+                time_slot  TEXT NOT NULL,
+                topic      TEXT NOT NULL,
                 objectives TEXT,
-                materials TEXT,
-                homework TEXT,
-                notes TEXT,
+                materials  TEXT,
+                homework   TEXT,
+                notes      TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(date, subject, time_slot)
             )
         """)
-        
-        # System settings table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL,
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # ==================== AUTH & PORTAL TABLES ====================
-
-        # Online applications (from public /apply form)
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS applications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                full_name TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                email TEXT DEFAULT '',
-                parent_name TEXT DEFAULT '',
-                parent_phone TEXT DEFAULT '',
-                subjects TEXT NOT NULL,
+                id              {SERIAL_PK},
+                full_name       TEXT NOT NULL,
+                phone           TEXT NOT NULL,
+                email           TEXT DEFAULT '',
+                parent_name     TEXT DEFAULT '',
+                parent_phone    TEXT DEFAULT '',
+                subjects        TEXT NOT NULL,
                 previous_school TEXT DEFAULT '',
-                year_failed TEXT DEFAULT '',
-                message TEXT DEFAULT '',
-                status TEXT DEFAULT 'new',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                year_failed     TEXT DEFAULT '',
+                message         TEXT DEFAULT '',
+                status          TEXT DEFAULT 'new',
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # User accounts (admin + teacher + students)
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS user_accounts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
+                id            {SERIAL_PK},
+                username      TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
-                role TEXT NOT NULL CHECK(role IN ('admin','teacher','student')),
-                student_id TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                role          TEXT NOT NULL CHECK(role IN ('admin','teacher','student')),
+                student_id    TEXT,
+                created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Manlib educational videos per subject
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS manlib_videos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                subject TEXT NOT NULL,
-                title TEXT NOT NULL,
-                description TEXT,
-                video_type TEXT NOT NULL CHECK(video_type IN ('youtube','upload')),
-                video_url TEXT,
-                file_path TEXT,
+                id            {SERIAL_PK},
+                subject       TEXT NOT NULL,
+                title         TEXT NOT NULL,
+                description   TEXT,
+                video_type    TEXT NOT NULL CHECK(video_type IN ('youtube','upload')),
+                video_url     TEXT,
+                file_path     TEXT,
                 thumbnail_url TEXT,
-                duration TEXT,
-                order_num INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                duration      TEXT,
+                order_num     INTEGER DEFAULT 0,
+                created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Student personal timetable slots
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS timetable_slots (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id         {SERIAL_PK},
                 student_id TEXT,
-                day TEXT NOT NULL,
-                period INTEGER NOT NULL,
-                subject TEXT NOT NULL,
-                time_from TEXT NOT NULL,
-                time_to TEXT NOT NULL,
-                room TEXT DEFAULT '',
-                teacher TEXT DEFAULT '',
+                day        TEXT NOT NULL,
+                period     INTEGER NOT NULL,
+                subject    TEXT NOT NULL,
+                time_from  TEXT NOT NULL,
+                time_to    TEXT NOT NULL,
+                room       TEXT DEFAULT '',
+                teacher    TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Subject content library (notes, question papers, critical work, exam prep)
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS subject_content (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                subject TEXT NOT NULL,
+                id           {SERIAL_PK},
+                subject      TEXT NOT NULL,
                 content_type TEXT NOT NULL CHECK(content_type IN ('notes','question_paper','critical_work','exam_prep')),
-                title TEXT NOT NULL,
-                description TEXT DEFAULT '',
+                title        TEXT NOT NULL,
+                description  TEXT DEFAULT '',
                 content_text TEXT DEFAULT '',
-                file_path TEXT DEFAULT '',
-                link_url TEXT DEFAULT '',
-                order_num INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                file_path    TEXT DEFAULT '',
+                link_url     TEXT DEFAULT '',
+                order_num    INTEGER DEFAULT 0,
+                created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Subjects master table
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS subjects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL,
-                teacher TEXT DEFAULT '',
-                weight REAL DEFAULT 1.0,
+                id         {SERIAL_PK},
+                name       TEXT UNIQUE NOT NULL,
+                teacher    TEXT DEFAULT '',
+                weight     REAL DEFAULT 1.0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Progress snapshots (weekly averages for trend graphs)
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS progress_snapshots (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id         {SERIAL_PK},
                 student_id TEXT NOT NULL,
-                week TEXT NOT NULL,
-                average REAL NOT NULL,
+                week       TEXT NOT NULL,
+                average    REAL NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(student_id, week),
-                FOREIGN KEY (student_id) REFERENCES students(student_id)
+                UNIQUE(student_id, week)
             )
         """)
-
-        # Automation alerts log
-        cursor.execute("""
+        cur.execute(f"""
             CREATE TABLE IF NOT EXISTS automation_alerts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id         {SERIAL_PK},
                 student_id TEXT NOT NULL,
                 alert_type TEXT NOT NULL,
-                message TEXT NOT NULL,
-                resolved INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(student_id)
+                message    TEXT NOT NULL,
+                resolved   INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        conn.commit()
+
+        # Live migrations
+        if POSTGRES:
+            for sql in [
+                "ALTER TABLE students ADD COLUMN IF NOT EXISTS academic_risk TEXT DEFAULT 'on_track'",
+                "ALTER TABLE students ADD COLUMN IF NOT EXISTS attendance_risk TEXT DEFAULT 'ok'",
+                "ALTER TABLE students ADD COLUMN IF NOT EXISTS payment_risk TEXT DEFAULT 'pending'",
+                "ALTER TABLE assessments ADD COLUMN IF NOT EXISTS weight REAL DEFAULT 1",
+                "ALTER TABLE payments ADD COLUMN IF NOT EXISTS due_date DATE",
+            ]:
+                try: cur.execute(sql)
+                except Exception: pass
+        else:
+            for sql in [
+                "ALTER TABLE students ADD COLUMN academic_risk TEXT DEFAULT 'on_track'",
+                "ALTER TABLE students ADD COLUMN attendance_risk TEXT DEFAULT 'ok'",
+                "ALTER TABLE students ADD COLUMN payment_risk TEXT DEFAULT 'pending'",
+                "ALTER TABLE assessments ADD COLUMN weight REAL DEFAULT 1",
+                "ALTER TABLE payments ADD COLUMN due_date DATE",
+            ]:
+                try: cur.execute(sql); conn.commit()
+                except Exception: pass
 
         conn.commit()
 
-        # ── Live DB migrations (add columns to existing databases) ────────────
-        migrations = [
-            ("ALTER TABLE students ADD COLUMN academic_risk TEXT DEFAULT 'on_track'",),
-            ("ALTER TABLE students ADD COLUMN attendance_risk TEXT DEFAULT 'ok'",),
-            ("ALTER TABLE students ADD COLUMN payment_risk TEXT DEFAULT 'pending'",),
-            ("ALTER TABLE assessments ADD COLUMN weight REAL DEFAULT 1",),
-            ("ALTER TABLE payments ADD COLUMN due_date DATE",),
-        ]
-        for (sql,) in migrations:
-            try:
-                cursor.execute(sql)
-                conn.commit()
-            except Exception:
-                pass  # Column already exists — ignore
-
-        # Create applications table if this is an older database
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS applications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                full_name TEXT NOT NULL,
-                phone TEXT NOT NULL,
-                email TEXT DEFAULT '',
-                parent_name TEXT DEFAULT '',
-                parent_phone TEXT DEFAULT '',
-                subjects TEXT NOT NULL,
-                previous_school TEXT DEFAULT '',
-                year_failed TEXT DEFAULT '',
-                message TEXT DEFAULT '',
-                status TEXT DEFAULT 'new',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        # Seed default admin account if not exists
+        # Seed admin
         from werkzeug.security import generate_password_hash
-        existing = cursor.execute(
-            "SELECT id FROM user_accounts WHERE username='admin'"
-        ).fetchone()
-        if not existing:
-            cursor.execute(
-                "INSERT INTO user_accounts (username, password_hash, role) VALUES (?,?,?)",
-                ('admin', generate_password_hash('Classdoodle@password'), 'admin')
-            )
+        row = fetchone(conn, f"SELECT id FROM user_accounts WHERE username={PH}", ('admin',))
+        if not row:
+            cur.execute(
+                f"INSERT INTO user_accounts (username, password_hash, role) VALUES ({PH},{PH},{PH})",
+                ('admin', generate_password_hash('Classdoodle@password'), 'admin'))
             conn.commit()
 
-        # Seed Asingamaanda Nefefe (ASI001) if not exists
-        existing_student = cursor.execute(
-            "SELECT id FROM students WHERE student_id='ASI001'"
-        ).fetchone()
-        if not existing_student:
-            cursor.execute("""
-                INSERT INTO students
-                  (student_id, name, email, registration_date, status)
-                VALUES ('ASI001','Asingamaanda Nefefe','asi001@rewriteacademy.local',
-                        date('now'),'active')
-            """)
-            for subj in ('Mathematics', 'Life Sciences', 'Geography'):
-                cursor.execute(
-                    "INSERT INTO student_subjects (student_id, subject) VALUES (?,?)",
-                    ('ASI001', subj)
-                )
-            cursor.execute(
-                "INSERT INTO user_accounts (username, password_hash, role, student_id) VALUES (?,?,?,?)",
-                ('ASI001', generate_password_hash('student123'), 'student', 'ASI001')
-            )
-            # Seed timetable slots for ASI001
-            _slots = [
-                ('Monday',    1, 'Mathematics',  '07:00', '07:50'),
-                ('Monday',    2, 'Life Sciences', '07:50', '08:40'),
-                ('Monday',    3, 'Geography',     '09:00', '09:50'),
-                ('Monday',    4, 'Mathematics',   '09:50', '10:40'),
-                ('Monday',    5, 'Life Sciences', '10:40', '11:30'),
-                ('Monday',    6, 'Geography',     '11:30', '12:20'),
-                ('Tuesday',   1, 'Geography',     '07:00', '07:50'),
-                ('Tuesday',   2, 'Mathematics',   '07:50', '08:40'),
-                ('Tuesday',   3, 'Life Sciences', '09:00', '09:50'),
-                ('Tuesday',   4, 'Geography',     '09:50', '10:40'),
-                ('Tuesday',   5, 'Mathematics',   '10:40', '11:30'),
-                ('Tuesday',   6, 'Life Sciences', '11:30', '12:20'),
-                ('Wednesday', 1, 'Mathematics',   '07:00', '07:50'),
-                ('Wednesday', 2, 'Geography',     '07:50', '08:40'),
-                ('Wednesday', 3, 'Life Sciences', '09:00', '09:50'),
-                ('Wednesday', 4, 'Mathematics',   '09:50', '10:40'),
-                ('Wednesday', 5, 'Geography',     '10:40', '11:30'),
-                ('Wednesday', 6, 'Life Sciences', '11:30', '12:20'),
-                ('Thursday',  1, 'Life Sciences', '07:00', '07:50'),
-                ('Thursday',  2, 'Mathematics',   '07:50', '08:40'),
-                ('Thursday',  3, 'Geography',     '09:00', '09:50'),
-                ('Thursday',  4, 'Life Sciences', '09:50', '10:40'),
-                ('Thursday',  5, 'Mathematics',   '10:40', '11:30'),
-                ('Thursday',  6, 'Geography',     '11:30', '12:20'),
-                ('Friday',    1, 'Mathematics',   '07:00', '07:50'),
-                ('Friday',    2, 'Life Sciences', '07:50', '08:40'),
-                ('Friday',    3, 'Geography',     '09:00', '09:50'),
-                ('Friday',    4, 'Mathematics',   '09:50', '10:40'),
-                ('Friday',    5, 'Life Sciences', '10:40', '11:30'),
-                ('Friday',    6, 'Geography',     '11:30', '12:20'),
-            ]
-            for day, period, subject, t_from, t_to in _slots:
-                cursor.execute("""
-                    INSERT INTO timetable_slots
-                      (student_id, day, period, subject, time_from, time_to)
-                    VALUES (?,?,?,?,?,?)
-                """, ('ASI001', day, period, subject, t_from, t_to))
+        # Seed ASI001
+        row = fetchone(conn, f"SELECT id FROM students WHERE student_id={PH}", ('ASI001',))
+        if not row:
+            cur.execute(f"""
+                INSERT INTO students (student_id, name, email, registration_date, status)
+                VALUES ({PH},{PH},{PH},{PH},{PH})
+            """, ('ASI001','Asingamaanda Nefefe','asi001@rewriteacademy.local', today,'active'))
+            for subj in ('Mathematics','Life Sciences','Geography'):
+                cur.execute(f"INSERT INTO student_subjects (student_id,subject) VALUES ({PH},{PH})",
+                            ('ASI001', subj))
+            cur.execute(
+                f"INSERT INTO user_accounts (username,password_hash,role,student_id) VALUES ({PH},{PH},{PH},{PH})",
+                ('ASI001', generate_password_hash('student123'), 'student', 'ASI001'))
+            for day,period,subject,t_from,t_to in [
+                ('Monday',1,'Mathematics','07:00','07:50'),('Monday',2,'Life Sciences','07:50','08:40'),
+                ('Monday',3,'Geography','09:00','09:50'),('Monday',4,'Mathematics','09:50','10:40'),
+                ('Monday',5,'Life Sciences','10:40','11:30'),('Monday',6,'Geography','11:30','12:20'),
+                ('Tuesday',1,'Geography','07:00','07:50'),('Tuesday',2,'Mathematics','07:50','08:40'),
+                ('Tuesday',3,'Life Sciences','09:00','09:50'),('Tuesday',4,'Geography','09:50','10:40'),
+                ('Tuesday',5,'Mathematics','10:40','11:30'),('Tuesday',6,'Life Sciences','11:30','12:20'),
+                ('Wednesday',1,'Mathematics','07:00','07:50'),('Wednesday',2,'Geography','07:50','08:40'),
+                ('Wednesday',3,'Life Sciences','09:00','09:50'),('Wednesday',4,'Mathematics','09:50','10:40'),
+                ('Wednesday',5,'Geography','10:40','11:30'),('Wednesday',6,'Life Sciences','11:30','12:20'),
+                ('Thursday',1,'Life Sciences','07:00','07:50'),('Thursday',2,'Mathematics','07:50','08:40'),
+                ('Thursday',3,'Geography','09:00','09:50'),('Thursday',4,'Life Sciences','09:50','10:40'),
+                ('Thursday',5,'Mathematics','10:40','11:30'),('Thursday',6,'Geography','11:30','12:20'),
+                ('Friday',1,'Mathematics','07:00','07:50'),('Friday',2,'Life Sciences','07:50','08:40'),
+                ('Friday',3,'Geography','09:00','09:50'),('Friday',4,'Mathematics','09:50','10:40'),
+                ('Friday',5,'Life Sciences','10:40','11:30'),('Friday',6,'Geography','11:30','12:20'),
+            ]:
+                cur.execute(f"""
+                    INSERT INTO timetable_slots (student_id,day,period,subject,time_from,time_to)
+                    VALUES ({PH},{PH},{PH},{PH},{PH},{PH})
+                """, ('ASI001',day,period,subject,t_from,t_to))
             conn.commit()
 
         print("Database initialized successfully")
-    
+        release_connection(conn)
+
     def execute_query(self, query, params=None):
-        """Execute a query and return results"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
-        
+        conn   = get_connection()
+        result = qexec(conn, query, params)
         conn.commit()
-        return cursor
-    
+        release_connection(conn)
+        return result
+
     def get_next_student_id(self):
-        """Generate next student ID (CD001, CD002, etc.)"""
-        cursor = self.execute_query("SELECT MAX(id) as max_id FROM students")
-        result = cursor.fetchone()
-        max_id = result['max_id'] if result['max_id'] else 0
+        row    = self.execute_query("SELECT MAX(id) as max_id FROM students").fetchone()
+        max_id = row['max_id'] if (row and row['max_id']) else 0
         return f"CD{(max_id + 1):03d}"
-    
+
     def close(self):
-        """Close database connection"""
-        if self.conn:
-            self.conn.close()
-            self.conn = None
+        pass  # no-op: connections are per-operation
 
 
 class StudentManager:
-    """Manage student operations"""
-    
     def __init__(self, db: ClassDoodleDB):
         self.db = db
-    
-    def add_student(self, name, email, phone=None, parent_name=None, 
-                   parent_phone=None, parent_email=None, subjects=None, notes=None):
-        """Add a new student"""
-        
-        student_id = self.db.get_next_student_id()
+
+    def add_student(self, name, email, phone=None, parent_name=None,
+                    parent_phone=None, parent_email=None, subjects=None, notes=None):
+        student_id        = self.db.get_next_student_id()
         registration_date = date.today().isoformat()
-        
         try:
-            # Insert student
-            self.db.execute_query("""
-                INSERT INTO students 
-                (student_id, name, email, phone, parent_name, parent_phone, 
-                 parent_email, registration_date, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (student_id, name, email, phone, parent_name, parent_phone, 
+            self.db.execute_query(f"""
+                INSERT INTO students
+                  (student_id, name, email, phone, parent_name, parent_phone,
+                   parent_email, registration_date, notes)
+                VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})
+            """, (student_id, name, email, phone, parent_name, parent_phone,
                   parent_email, registration_date, notes))
-            
-            # Add subjects
             if subjects:
                 for subject in subjects:
-                    self.db.execute_query("""
-                        INSERT INTO student_subjects (student_id, subject)
-                        VALUES (?, ?)
-                    """, (student_id, subject.strip()))
-            
+                    self.db.execute_query(
+                        f"INSERT INTO student_subjects (student_id,subject) VALUES ({PH},{PH})",
+                        (student_id, subject.strip()))
             return student_id
-        
-        except sqlite3.IntegrityError as e:
-            print(f"❌ Error adding student: {e}")
+        except Exception as e:
+            print(f"Error adding student: {e}")
             return None
-    
+
     def get_student(self, student_id):
-        """Get student details"""
-        cursor = self.db.execute_query(
-            "SELECT * FROM students WHERE student_id = ?", (student_id,)
-        )
-        student = cursor.fetchone()
-        
+        result  = self.db.execute_query(
+            f"SELECT * FROM students WHERE student_id = {PH}", (student_id,))
+        student = result.fetchone()
         if student:
-            # Get subjects
-            cursor = self.db.execute_query(
-                "SELECT subject FROM student_subjects WHERE student_id = ?",
-                (student_id,)
-            )
-            subjects = [row['subject'] for row in cursor.fetchall()]
-            
-            return dict(student), subjects
-        
+            subj_result = self.db.execute_query(
+                f"SELECT subject FROM student_subjects WHERE student_id = {PH}", (student_id,))
+            return dict(student), [r['subject'] for r in subj_result.fetchall()]
         return None, None
-    
+
     def get_all_students(self, status='active'):
-        """Get all students"""
         if status:
-            cursor = self.db.execute_query(
-                "SELECT * FROM students WHERE status = ? ORDER BY name",
-                (status,)
-            )
+            result = self.db.execute_query(
+                f"SELECT * FROM students WHERE status = {PH} ORDER BY name", (status,))
         else:
-            cursor = self.db.execute_query(
-                "SELECT * FROM students ORDER BY name"
-            )
-        
+            result = self.db.execute_query("SELECT * FROM students ORDER BY name")
         students = []
-        for row in cursor.fetchall():
+        for row in result.fetchall():
             student = dict(row)
-            # Get subjects
-            cursor2 = self.db.execute_query(
-                "SELECT subject FROM student_subjects WHERE student_id = ?",
-                (student['student_id'],)
-            )
-            student['subjects'] = [r['subject'] for r in cursor2.fetchall()]
+            subj_result = self.db.execute_query(
+                f"SELECT subject FROM student_subjects WHERE student_id = {PH}",
+                (student['student_id'],))
+            student['subjects'] = [r['subject'] for r in subj_result.fetchall()]
             students.append(student)
-        
         return students
-    
+
     def update_student(self, student_id, **kwargs):
-        """Update student information"""
-        allowed_fields = ['name', 'email', 'phone', 'parent_name', 
-                         'parent_phone', 'parent_email', 'status', 'notes']
-        
-        updates = []
-        values = []
-        
+        allowed = ['name','email','phone','parent_name','parent_phone','parent_email','status','notes']
+        updates, values = [], []
         for field, value in kwargs.items():
-            if field in allowed_fields and value is not None:
-                updates.append(f"{field} = ?")
-                values.append(value)
-        
+            if field in allowed and value is not None:
+                updates.append(f"{field} = {PH}"); values.append(value)
         if not updates:
             return False
-        
         values.append(student_id)
-        query = f"UPDATE students SET {', '.join(updates)} WHERE student_id = ?"
-        
-        self.db.execute_query(query, tuple(values))
+        self.db.execute_query(
+            f"UPDATE students SET {', '.join(updates)} WHERE student_id = {PH}", tuple(values))
         return True
-    
+
     def bulk_import(self, students_data):
-        """Import multiple students at once"""
-        imported = []
-        failed = []
-        
+        imported, failed = [], []
         for student in students_data:
             try:
-                student_id = self.add_student(
-                    name=student['name'],
-                    email=student['email'],
-                    phone=student.get('phone'),
-                    parent_name=student.get('parent_name'),
-                    parent_phone=student.get('parent_phone'),
-                    parent_email=student.get('parent_email'),
-                    subjects=student.get('subjects', []),
-                    notes=student.get('notes')
-                )
-                
-                if student_id:
-                    imported.append(student_id)
-                else:
-                    failed.append(student['email'])
-            
+                sid = self.add_student(
+                    name=student['name'], email=student['email'],
+                    phone=student.get('phone'), parent_name=student.get('parent_name'),
+                    parent_phone=student.get('parent_phone'), parent_email=student.get('parent_email'),
+                    subjects=student.get('subjects', []), notes=student.get('notes'))
+                (imported if sid else failed).append(sid or student['email'])
             except Exception as e:
-                failed.append(f"{student['email']}: {str(e)}")
-        
+                failed.append(f"{student['email']}: {e}")
         return imported, failed
 
 
 class AttendanceManager:
-    """Manage attendance operations"""
-    
     def __init__(self, db: ClassDoodleDB):
         self.db = db
-    
+
     def mark_attendance(self, student_ids, date_str, time_slot, subject, status='present'):
-        """Mark attendance for students"""
-        
+        if POSTGRES:
+            sql = f"""INSERT INTO attendance (student_id,date,time_slot,subject,status)
+                      VALUES ({PH},{PH},{PH},{PH},{PH})
+                      ON CONFLICT (student_id,date,time_slot,subject)
+                      DO UPDATE SET status=EXCLUDED.status, marked_at=NOW()"""
+        else:
+            sql = f"""INSERT OR REPLACE INTO attendance (student_id,date,time_slot,subject,status)
+                      VALUES ({PH},{PH},{PH},{PH},{PH})"""
         marked = 0
-        for student_id in student_ids:
+        for sid in student_ids:
             try:
-                self.db.execute_query("""
-                    INSERT OR REPLACE INTO attendance 
-                    (student_id, date, time_slot, subject, status)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (student_id, date_str, time_slot, subject, status))
+                self.db.execute_query(sql, (sid, date_str, time_slot, subject, status))
                 marked += 1
             except Exception as e:
-                print(f"❌ Error marking attendance for {student_id}: {e}")
-        
+                print(f"Attendance error for {sid}: {e}")
         return marked
-    
+
     def get_attendance(self, date_str=None, student_id=None, subject=None):
-        """Get attendance records with filters"""
-        
-        query = "SELECT * FROM attendance WHERE 1=1"
-        params = []
-        
-        if date_str:
-            query += " AND date = ?"
-            params.append(date_str)
-        
-        if student_id:
-            query += " AND student_id = ?"
-            params.append(student_id)
-        
-        if subject:
-            query += " AND subject = ?"
-            params.append(subject)
-        
+        query, params = "SELECT * FROM attendance WHERE 1=1", []
+        if date_str:   query += f" AND date = {PH}";       params.append(date_str)
+        if student_id: query += f" AND student_id = {PH}"; params.append(student_id)
+        if subject:    query += f" AND subject = {PH}";    params.append(subject)
         query += " ORDER BY date DESC, time_slot"
-        
-        cursor = self.db.execute_query(query, tuple(params) if params else None)
-        return [dict(row) for row in cursor.fetchall()]
-    
+        return self.db.execute_query(query, tuple(params) if params else None).fetchall()
+
     def get_attendance_rate(self, student_id, start_date=None, end_date=None):
-        """Calculate attendance rate for a student"""
-        
-        query = """
-            SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present
-            FROM attendance
-            WHERE student_id = ?
-        """
+        query  = f"SELECT COUNT(*) as total, SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) as present FROM attendance WHERE student_id={PH}"
         params = [student_id]
-        
-        if start_date:
-            query += " AND date >= ?"
-            params.append(start_date)
-        
-        if end_date:
-            query += " AND date <= ?"
-            params.append(end_date)
-        
-        cursor = self.db.execute_query(query, tuple(params))
-        result = cursor.fetchone()
-        
-        if result['total'] > 0:
+        if start_date: query += f" AND date >= {PH}"; params.append(start_date)
+        if end_date:   query += f" AND date <= {PH}"; params.append(end_date)
+        result = self.db.execute_query(query, tuple(params)).fetchone()
+        if result and result['total']:
             return (result['present'] / result['total']) * 100
         return 0.0
 
 
 class AssessmentManager:
-    """Manage assessments and grades"""
-    
     def __init__(self, db: ClassDoodleDB):
         self.db = db
-    
-    def add_assessment(self, student_id, subject, assessment_type, score, 
-                      max_score=100, date_str=None, notes=None):
-        """Add an assessment record"""
-        
+
+    def add_assessment(self, student_id, subject, assessment_type, score,
+                       max_score=100, date_str=None, notes=None):
         if date_str is None:
             date_str = date.today().isoformat()
-        
-        self.db.execute_query("""
-            INSERT INTO assessments 
-            (student_id, subject, assessment_type, score, max_score, date, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+        self.db.execute_query(f"""
+            INSERT INTO assessments (student_id,subject,assessment_type,score,max_score,date,notes)
+            VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH})
         """, (student_id, subject, assessment_type, score, max_score, date_str, notes))
-        
         return True
-    
+
     def get_assessments(self, student_id=None, subject=None):
-        """Get assessment records"""
-        
-        query = "SELECT * FROM assessments WHERE 1=1"
-        params = []
-        
-        if student_id:
-            query += " AND student_id = ?"
-            params.append(student_id)
-        
-        if subject:
-            query += " AND subject = ?"
-            params.append(subject)
-        
+        query, params = "SELECT * FROM assessments WHERE 1=1", []
+        if student_id: query += f" AND student_id = {PH}"; params.append(student_id)
+        if subject:    query += f" AND subject = {PH}";    params.append(subject)
         query += " ORDER BY date DESC"
-        
-        cursor = self.db.execute_query(query, tuple(params) if params else None)
-        return [dict(row) for row in cursor.fetchall()]
-    
+        return self.db.execute_query(query, tuple(params) if params else None).fetchall()
+
     def get_student_average(self, student_id, subject=None):
-        """Calculate average score for a student"""
-        
-        query = """
-            SELECT AVG((score / max_score) * 100) as average
-            FROM assessments
-            WHERE student_id = ?
-        """
+        query  = f"SELECT AVG((score/max_score)*100) as average FROM assessments WHERE student_id={PH}"
         params = [student_id]
-        
-        if subject:
-            query += " AND subject = ?"
-            params.append(subject)
-        
-        cursor = self.db.execute_query(query, tuple(params))
-        result = cursor.fetchone()
-        
-        return result['average'] if result['average'] else 0.0
-    
+        if subject: query += f" AND subject={PH}"; params.append(subject)
+        result = self.db.execute_query(query, tuple(params)).fetchone()
+        return result['average'] if (result and result['average']) else 0.0
+
     def bulk_add_assessments(self, assessments_data):
-        """Import multiple assessment records"""
-        
         added = 0
-        for assessment in assessments_data:
+        for a in assessments_data:
             try:
-                self.add_assessment(
-                    student_id=assessment['student_id'],
-                    subject=assessment['subject'],
-                    assessment_type=assessment['assessment_type'],
-                    score=assessment['score'],
-                    max_score=assessment.get('max_score', 100),
-                    date_str=assessment.get('date'),
-                    notes=assessment.get('notes')
-                )
+                self.add_assessment(student_id=a['student_id'], subject=a['subject'],
+                    assessment_type=a['assessment_type'], score=a['score'],
+                    max_score=a.get('max_score', 100), date_str=a.get('date'), notes=a.get('notes'))
                 added += 1
             except Exception as e:
-                print(f"❌ Error adding assessment: {e}")
-        
+                print(f"Assessment error: {e}")
         return added
 
 
 class PaymentManager:
-    """Manage payments and billing"""
-    
     def __init__(self, db: ClassDoodleDB):
         self.db = db
-    
+
     def record_payment(self, student_id, amount, payment_date, month_for,
-                      payment_method=None, reference=None, notes=None):
-        """Record a payment"""
-        
-        self.db.execute_query("""
-            INSERT INTO payments 
-            (student_id, amount, payment_date, month_for, payment_method, 
-             reference, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, 'paid', ?)
-        """, (student_id, amount, payment_date, month_for, payment_method, 
-              reference, notes))
-        
+                       payment_method=None, reference=None, notes=None):
+        self.db.execute_query(f"""
+            INSERT INTO payments (student_id,amount,payment_date,month_for,payment_method,reference,status,notes)
+            VALUES ({PH},{PH},{PH},{PH},{PH},{PH},'paid',{PH})
+        """, (student_id, amount, payment_date, month_for, payment_method, reference, notes))
         return True
-    
+
     def get_payments(self, student_id=None, month_for=None, status=None):
-        """Get payment records"""
-        
-        query = "SELECT * FROM payments WHERE 1=1"
-        params = []
-        
-        if student_id:
-            query += " AND student_id = ?"
-            params.append(student_id)
-        
-        if month_for:
-            query += " AND month_for = ?"
-            params.append(month_for)
-        
-        if status:
-            query += " AND status = ?"
-            params.append(status)
-        
+        query, params = "SELECT * FROM payments WHERE 1=1", []
+        if student_id: query += f" AND student_id={PH}"; params.append(student_id)
+        if month_for:  query += f" AND month_for={PH}";  params.append(month_for)
+        if status:     query += f" AND status={PH}";     params.append(status)
         query += " ORDER BY payment_date DESC"
-        
-        cursor = self.db.execute_query(query, tuple(params) if params else None)
-        return [dict(row) for row in cursor.fetchall()]
-    
+        return self.db.execute_query(query, tuple(params) if params else None).fetchall()
+
     def get_outstanding_payments(self, month_for):
-        """Find students who haven't paid for a specific month"""
-        
-        cursor = self.db.execute_query("""
-            SELECT s.student_id, s.name, s.email, s.parent_phone
-            FROM students s
-            WHERE s.status = 'active'
-            AND s.student_id NOT IN (
-                SELECT student_id FROM payments 
-                WHERE month_for = ? AND status = 'paid'
-            )
-        """, (month_for,))
-        
-        return [dict(row) for row in cursor.fetchall()]
-    
+        return self.db.execute_query(f"""
+            SELECT s.student_id, s.name, s.email, s.parent_phone FROM students s
+            WHERE s.status='active' AND s.student_id NOT IN (
+                SELECT student_id FROM payments WHERE month_for={PH} AND status='paid')
+        """, (month_for,)).fetchall()
+
     def get_revenue_report(self, start_date=None, end_date=None):
-        """Generate revenue report"""
-        
-        query = """
-            SELECT 
-                COUNT(*) as payment_count,
-                SUM(amount) as total_revenue,
-                AVG(amount) as avg_payment
-            FROM payments
-            WHERE status = 'paid'
-        """
+        query  = f"SELECT COUNT(*) as payment_count, SUM(amount) as total_revenue, AVG(amount) as avg_payment FROM payments WHERE status='paid'"
         params = []
-        
-        if start_date:
-            query += " AND payment_date >= ?"
-            params.append(start_date)
-        
-        if end_date:
-            query += " AND payment_date <= ?"
-            params.append(end_date)
-        
-        cursor = self.db.execute_query(query, tuple(params) if params else None)
-        return dict(cursor.fetchone())
-
-
-if __name__ == "__main__":
-    # Initialize database
-    db = ClassDoodleDB()
-    
-    print("\n" + "=" * 70)
-    print("✅ ClassDoodle Backend Initialized")
-    print("=" * 70)
-    print("\nDatabase file:", db.db_path)
-    print("\nTables created:")
-    print("  • students")
-    print("  • student_subjects")
-    print("  • attendance")
-    print("  • assessments")
-    print("  • payments")
-    print("  • leads")
-    print("  • lesson_plans")
-    print("  • settings")
-    print("\n" + "=" * 70)
+        if start_date: query += f" AND payment_date>={PH}"; params.append(start_date)
+        if end_date:   query += f" AND payment_date<={PH}"; params.append(end_date)
+        return self.db.execute_query(query, tuple(params) if params else None).fetchone() or {}

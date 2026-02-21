@@ -4,10 +4,6 @@ Clean API for all backend operations
 """
 
 from pathlib import Path
-import sys
-
-# Add parent directory to path
-sys.path.append(str(Path(__file__).parent.parent))
 
 from backend.database import (
     ClassDoodleDB, StudentManager, AttendanceManager, 

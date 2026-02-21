@@ -9,9 +9,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
 from pathlib import Path
-import sqlite3
 import os
 
+from backend.db_adapter import get_connection, release_connection, qexec, PH
 from backend.api import ClassDoodleAPI
 from backend import automation
 from backend.mailer import send_application_email, send_whatsapp_notification
@@ -31,9 +31,6 @@ CONTENT_UPLOAD_FOLDER = Path(__file__).parent / 'static' / 'uploads' / 'subject_
 CONTENT_UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 CONTENT_ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm'}
 
-DB_PATH = Path(__file__).parent / 'data' / 'classdoodle.db'
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-
 # Custom Jinja filter
 @app.template_filter('format_number')
 def format_number(value):
@@ -42,54 +39,14 @@ def format_number(value):
     except:
         return value
 
-# ---- migrate: ensure subject_content table exists in the main DB ----
-def _migrate_db():
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS subject_content (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subject TEXT NOT NULL,
-            content_type TEXT NOT NULL CHECK(content_type IN ('notes','question_paper','critical_work','exam_prep')),
-            title TEXT NOT NULL,
-            description TEXT DEFAULT '',
-            content_text TEXT DEFAULT '',
-            file_path TEXT DEFAULT '',
-            link_url TEXT DEFAULT '',
-            order_num INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS applications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            phone TEXT NOT NULL,
-            email TEXT DEFAULT '',
-            parent_name TEXT DEFAULT '',
-            parent_phone TEXT DEFAULT '',
-            subjects TEXT NOT NULL,
-            previous_school TEXT DEFAULT '',
-            year_failed TEXT DEFAULT '',
-            message TEXT DEFAULT '',
-            status TEXT DEFAULT 'new',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-_migrate_db()
-
-# Point API at the same DB file that get_db() uses (avoids split-brain)
-api = ClassDoodleAPI(db_path=str(DB_PATH))
+# schema is handled entirely by ClassDoodleDB.initialize_database() via db_adapter
+api = ClassDoodleAPI()
 
 
 # ==================== AUTH HELPERS ====================
 
 def get_db():
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return get_connection()
 
 
 def login_required(f):
@@ -166,10 +123,8 @@ def login():
         password = request.form.get('password', '')
 
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM user_accounts WHERE username=?", (username,)
-        ).fetchone()
-        conn.close()
+        user = qexec(conn, f"SELECT * FROM user_accounts WHERE username={PH}", (username,)).fetchone()
+        release_connection(conn)
 
         if user and check_password_hash(user['password_hash'], password):
             session.clear()
@@ -238,15 +193,15 @@ def apply():
     # Save to DB
     try:
         conn = get_db()
-        conn.execute("""
+        qexec(conn, f"""
             INSERT INTO applications
               (full_name, phone, email, parent_name, parent_phone,
                subjects, previous_school, year_failed, message)
-            VALUES (?,?,?,?,?,?,?,?,?)
+            VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})
         """, (full_name, phone, email, parent_name, parent_phone,
                subjects_str, previous_school, year_failed, message))
         conn.commit()
-        conn.close()
+        release_connection(conn)
     except Exception as e:
         flash(f'Database error: {e}', 'error')
         return render_template('apply.html', submitted=False)
@@ -446,13 +401,12 @@ def add_assessment():
         # Store weight on the just-inserted row
         try:
             conn = get_db()
-            conn.execute(
-                "UPDATE assessments SET weight=? WHERE student_id=? AND rowid=("
-                "SELECT MAX(rowid) FROM assessments WHERE student_id=?)",
-                (weight, student_id, student_id)
-            )
+            qexec(conn,
+                f"UPDATE assessments SET weight={PH} WHERE student_id={PH} AND id=("
+                f"SELECT MAX(id) FROM assessments WHERE student_id={PH})",
+                (weight, student_id, student_id))
             conn.commit()
-            conn.close()
+            release_connection(conn)
         except Exception:
             pass
         # Automation Rule 1 — academic risk check
@@ -553,17 +507,15 @@ def admin_applications():
     status_filter = request.args.get('status', '')
     conn = get_db()
     if status_filter:
-        apps = conn.execute(
-            "SELECT * FROM applications WHERE status=? ORDER BY created_at DESC",
-            (status_filter,)
-        ).fetchall()
+        apps = qexec(conn,
+            f"SELECT * FROM applications WHERE status={PH} ORDER BY created_at DESC",
+            (status_filter,)).fetchall()
     else:
-        apps = conn.execute(
-            "SELECT * FROM applications ORDER BY created_at DESC"
-        ).fetchall()
-    new_count   = conn.execute("SELECT COUNT(*) FROM applications WHERE status='new'").fetchone()[0]
-    total_count = conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
-    conn.close()
+        apps = qexec(conn,
+            "SELECT * FROM applications ORDER BY created_at DESC").fetchall()
+    new_count   = qexec(conn, "SELECT COUNT(*) as cnt FROM applications WHERE status='new'").fetchone()['cnt']
+    total_count = qexec(conn, "SELECT COUNT(*) as cnt FROM applications").fetchone()['cnt']
+    release_connection(conn)
     return render_template('admin_applications.html',
                            applications=[dict(a) for a in apps],
                            new_count=new_count, total_count=total_count,
@@ -575,9 +527,9 @@ def admin_applications():
 def update_application_status(app_id):
     new_status = request.form.get('status', 'new')
     conn = get_db()
-    conn.execute("UPDATE applications SET status=? WHERE id=?", (new_status, app_id))
+    qexec(conn, f"UPDATE applications SET status={PH} WHERE id={PH}", (new_status, app_id))
     conn.commit()
-    conn.close()
+    release_connection(conn)
     flash(f'Application marked as {new_status}.', 'success')
     return redirect(url_for('admin_applications', status=request.args.get('status', '')))
 
@@ -599,8 +551,8 @@ def student_accounts():
     all_students = api.get_all_students_summary()
     conn = get_db()
     accounts = {row['student_id']: dict(row) for row in
-                conn.execute("SELECT * FROM user_accounts WHERE role='student'").fetchall()}
-    conn.close()
+                qexec(conn, "SELECT * FROM user_accounts WHERE role='student'").fetchall()}
+    release_connection(conn)
     account_ids = set(accounts.keys())
     students_no_account = [s for s in all_students if s['student_id'] not in account_ids]
     return render_template('admin/student_accounts.html',
@@ -624,24 +576,21 @@ def create_student_account():
         return redirect(url_for('student_accounts'))
 
     conn = get_db()
-    existing = conn.execute(
-        "SELECT id FROM user_accounts WHERE username=?", (student_id,)
-    ).fetchone()
+    existing = qexec(conn,
+        f"SELECT id FROM user_accounts WHERE username={PH}", (student_id,)).fetchone()
     if existing:
-        conn.execute(
-            "UPDATE user_accounts SET password_hash=? WHERE username=?",
-            (generate_password_hash(password), student_id)
-        )
+        qexec(conn,
+            f"UPDATE user_accounts SET password_hash={PH} WHERE username={PH}",
+            (generate_password_hash(password), student_id))
         conn.commit()
         flash(f"Password updated for {student['name']} ({student_id})", 'success')
     else:
-        conn.execute(
-            "INSERT INTO user_accounts (username, password_hash, role, student_id) VALUES (?,?,?,?)",
-            (student_id, generate_password_hash(password), 'student', student_id)
-        )
+        qexec(conn,
+            f"INSERT INTO user_accounts (username, password_hash, role, student_id) VALUES ({PH},{PH},{PH},{PH})",
+            (student_id, generate_password_hash(password), 'student', student_id))
         conn.commit()
-        flash(f"Login created for {student['name']} — Username: {student_id}", 'success')
-    conn.close()
+        flash(f"Login created for {student['name']} -- Username: {student_id}", 'success')
+    release_connection(conn)
     return redirect(url_for('student_accounts'))
 
 
@@ -649,9 +598,9 @@ def create_student_account():
 @admin_required
 def delete_student_account(username):
     conn = get_db()
-    conn.execute("DELETE FROM user_accounts WHERE username=? AND role='student'", (username,))
+    qexec(conn, f"DELETE FROM user_accounts WHERE username={PH} AND role='student'", (username,))
     conn.commit()
-    conn.close()
+    release_connection(conn)
     flash(f'Login removed for {username}', 'success')
     return redirect(url_for('student_accounts'))
 
@@ -665,15 +614,13 @@ def admin_manlib():
     subject_filter = request.args.get('subject', '')
     conn = get_db()
     if subject_filter:
-        videos = conn.execute(
-            "SELECT * FROM manlib_videos WHERE subject=? ORDER BY subject, order_num, created_at",
-            (subject_filter,)
-        ).fetchall()
+        videos = qexec(conn,
+            f"SELECT * FROM manlib_videos WHERE subject={PH} ORDER BY subject, order_num, created_at",
+            (subject_filter,)).fetchall()
     else:
-        videos = conn.execute(
-            "SELECT * FROM manlib_videos ORDER BY subject, order_num, created_at"
-        ).fetchall()
-    conn.close()
+        videos = qexec(conn,
+            "SELECT * FROM manlib_videos ORDER BY subject, order_num, created_at").fetchall()
+    release_connection(conn)
 
     # Group by subject
     grouped = {}
@@ -729,12 +676,11 @@ def add_manlib_video():
         file_path = f'uploads/manlib/{subject.replace(" ", "_")}/{safe_name}'
 
     conn = get_db()
-    conn.execute("""
-        INSERT INTO manlib_videos (subject, title, description, video_type, video_url, file_path, duration, order_num)
-        VALUES (?,?,?,?,?,?,?,?)
-    """, (subject, title, description, video_type, video_url, file_path, duration, order_num))
+    qexec(conn,
+        f"INSERT INTO manlib_videos (subject, title, description, video_type, video_url, file_path, duration, order_num) VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})",
+        (subject, title, description, video_type, video_url, file_path, duration, order_num))
     conn.commit()
-    conn.close()
+    release_connection(conn)
 
     flash(f'Video added: "{title}" [{subject}]', 'success')
     return redirect(url_for('admin_manlib', subject=subject))
@@ -744,15 +690,15 @@ def add_manlib_video():
 @admin_required
 def delete_manlib_video(video_id):
     conn = get_db()
-    video = conn.execute("SELECT * FROM manlib_videos WHERE id=?", (video_id,)).fetchone()
+    video = qexec(conn, f"SELECT * FROM manlib_videos WHERE id={PH}", (video_id,)).fetchone()
     if video and video['file_path']:
         try:
             os.remove(str(Path(__file__).parent / 'static' / video['file_path']))
         except:
             pass
-    conn.execute("DELETE FROM manlib_videos WHERE id=?", (video_id,))
+    qexec(conn, f"DELETE FROM manlib_videos WHERE id={PH}", (video_id,))
     conn.commit()
-    conn.close()
+    release_connection(conn)
     flash('Video deleted.', 'success')
     return redirect(url_for('admin_manlib'))
 
@@ -769,12 +715,12 @@ def admin_subject_content():
     query = "SELECT * FROM subject_content WHERE 1=1"
     params = []
     if subject_filter:
-        query += " AND subject=?"; params.append(subject_filter)
+        query += f" AND subject={PH}"; params.append(subject_filter)
     if type_filter:
-        query += " AND content_type=?"; params.append(type_filter)
+        query += f" AND content_type={PH}"; params.append(type_filter)
     query += " ORDER BY subject, content_type, order_num, created_at"
-    items = conn.execute(query, params).fetchall()
-    conn.close()
+    items = qexec(conn, query, params).fetchall()
+    release_connection(conn)
 
     # Group by subject → content_type
     grouped = {}
@@ -825,13 +771,11 @@ def add_subject_content():
         file_path = f'uploads/subject_content/{subject.replace(" ", "_")}/{content_type}/{safe_name}'
 
     conn = get_db()
-    conn.execute("""
-        INSERT INTO subject_content
-            (subject, content_type, title, description, content_text, file_path, link_url, order_num)
-        VALUES (?,?,?,?,?,?,?,?)
-    """, (subject, content_type, title, description, content_text, file_path, link_url, order_num))
+    qexec(conn,
+        f"INSERT INTO subject_content (subject, content_type, title, description, content_text, file_path, link_url, order_num) VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})",
+        (subject, content_type, title, description, content_text, file_path, link_url, order_num))
     conn.commit()
-    conn.close()
+    release_connection(conn)
     flash(f'Content added: "{title}" [{subject} / {content_type}]', 'success')
     return redirect(url_for('admin_subject_content', subject=subject, content_type=content_type))
 
@@ -840,15 +784,15 @@ def add_subject_content():
 @admin_required
 def delete_subject_content(item_id):
     conn = get_db()
-    item = conn.execute("SELECT * FROM subject_content WHERE id=?", (item_id,)).fetchone()
+    item = qexec(conn, f"SELECT * FROM subject_content WHERE id={PH}", (item_id,)).fetchone()
     if item and item['file_path']:
         try:
             os.remove(str(Path(__file__).parent / 'static' / item['file_path']))
         except:
             pass
-    conn.execute("DELETE FROM subject_content WHERE id=?", (item_id,))
+    qexec(conn, f"DELETE FROM subject_content WHERE id={PH}", (item_id,))
     conn.commit()
-    conn.close()
+    release_connection(conn)
     flash('Content deleted.', 'success')
     return redirect(url_for('admin_subject_content'))
 
@@ -865,7 +809,7 @@ def admin_student_timetable(student_id):
 
     if request.method == 'POST':
         # Delete existing and replace
-        conn.execute("DELETE FROM timetable_slots WHERE student_id=?", (student_id,))
+        qexec(conn, f"DELETE FROM timetable_slots WHERE student_id={PH}", (student_id,))
         days = request.form.getlist('day')
         periods = request.form.getlist('period')
         subjects_list = request.form.getlist('subject')
@@ -875,20 +819,20 @@ def admin_student_timetable(student_id):
         teachers = request.form.getlist('teacher')
         for i in range(len(days)):
             if days[i] and subjects_list[i]:
-                conn.execute("""
-                    INSERT INTO timetable_slots (student_id, day, period, subject, time_from, time_to, room, teacher)
-                    VALUES (?,?,?,?,?,?,?,?)
-                """, (student_id, days[i], int(periods[i] or i+1), subjects_list[i],
-                      time_froms[i], time_tos[i], rooms[i] if i < len(rooms) else '',
-                      teachers[i] if i < len(teachers) else ''))
+                qexec(conn,
+                    f"INSERT INTO timetable_slots (student_id, day, period, subject, time_from, time_to, room, teacher) VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})",
+                    (student_id, days[i], int(periods[i] or i+1), subjects_list[i],
+                     time_froms[i], time_tos[i], rooms[i] if i < len(rooms) else '',
+                     teachers[i] if i < len(teachers) else ''))
         conn.commit()
         flash(f"Timetable saved for {student['name']}", 'success')
+        release_connection(conn)
         return redirect(url_for('admin_student_timetable', student_id=student_id))
 
-    slots = conn.execute(
-        "SELECT * FROM timetable_slots WHERE student_id=? ORDER BY day, period", (student_id,)
+    slots = qexec(conn,
+        f"SELECT * FROM timetable_slots WHERE student_id={PH} ORDER BY day, period", (student_id,)
     ).fetchall()
-    conn.close()
+    release_connection(conn)
 
     DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     timetable_grid = {day: [] for day in DAYS}
@@ -938,12 +882,12 @@ def student_videos():
 
     conn = get_db()
     # Only show videos for subjects this student is enrolled in
-    placeholders = ','.join('?' * len(student['subjects']))
-    videos = conn.execute(
+    placeholders = ','.join([PH] * len(student['subjects']))
+    videos = qexec(conn,
         f"SELECT * FROM manlib_videos WHERE subject IN ({placeholders}) ORDER BY subject, order_num, created_at",
         student['subjects']
     ).fetchall() if student['subjects'] else []
-    conn.close()
+    release_connection(conn)
 
     grouped = {}
     for v in videos:
@@ -970,8 +914,8 @@ def student_subjects():
 
     # Videos per subject
     if subjects:
-        placeholders = ','.join('?' * len(subjects))
-        videos = conn.execute(
+        placeholders = ','.join([PH] * len(subjects))
+        videos = qexec(conn,
             f"SELECT * FROM manlib_videos WHERE subject IN ({placeholders}) ORDER BY subject, order_num, created_at",
             subjects
         ).fetchall()
@@ -980,14 +924,14 @@ def student_subjects():
 
     # All subject content for this student's subjects
     if subjects:
-        placeholders = ','.join('?' * len(subjects))
-        content_rows = conn.execute(
+        placeholders = ','.join([PH] * len(subjects))
+        content_rows = qexec(conn,
             f"SELECT * FROM subject_content WHERE subject IN ({placeholders}) ORDER BY subject, content_type, order_num, created_at",
             subjects
         ).fetchall()
     else:
         content_rows = []
-    conn.close()
+    release_connection(conn)
 
     # Build hub: subject → { videos: [], notes: [], question_paper: [], critical_work: [], exam_prep: [] }
     hub = {}
@@ -1024,10 +968,10 @@ def student_timetable():
         return redirect(url_for('logout'))
 
     conn = get_db()
-    slots = conn.execute(
-        "SELECT * FROM timetable_slots WHERE student_id=? ORDER BY day, period", (student_id,)
+    slots = qexec(conn,
+        f"SELECT * FROM timetable_slots WHERE student_id={PH} ORDER BY day, period", (student_id,)
     ).fetchall()
-    conn.close()
+    release_connection(conn)
 
     DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     timetable_grid = {day: [] for day in DAYS}
@@ -1101,21 +1045,21 @@ def _render_student_portal(student_id, payment_restricted=False):
 
     # Get student's personal timetable
     conn = get_db()
-    tmt_slots = conn.execute(
-        "SELECT * FROM timetable_slots WHERE student_id=? AND day=? ORDER BY period",
+    tmt_slots = qexec(conn,
+        f"SELECT * FROM timetable_slots WHERE student_id={PH} AND day={PH} ORDER BY period",
         (student_id, day_name)
     ).fetchall()
 
     # Count unread manlib videos for student's subjects
     video_counts = {}
     if student['subjects']:
-        placeholders = ','.join('?' * len(student['subjects']))
-        rows = conn.execute(
+        placeholders = ','.join([PH] * len(student['subjects']))
+        rows = qexec(conn,
             f"SELECT subject, COUNT(*) as cnt FROM manlib_videos WHERE subject IN ({placeholders}) GROUP BY subject",
             student['subjects']
         ).fetchall()
         video_counts = {r['subject']: r['cnt'] for r in rows}
-    conn.close()
+    release_connection(conn)
 
     return render_template('student_homepage.html',
                          student=student, performance=performance,
