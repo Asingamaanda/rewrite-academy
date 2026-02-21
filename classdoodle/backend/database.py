@@ -15,7 +15,19 @@ class ClassDoodleDB:
     """Main database manager -- connection-per-operation, pool-safe."""
 
     def __init__(self, db_path=None):   # db_path kept for backward compat, ignored
-        self.initialize_database()
+        try:
+            self.initialize_database()
+        except Exception as e:
+            print(f"WARNING: DB init deferred — {e}")
+            self._init_done = False
+        else:
+            self._init_done = True
+
+    def ensure_initialized(self):
+        """Called on first real request if __init__ deferred."""
+        if not getattr(self, '_init_done', True):
+            self.initialize_database()
+            self._init_done = True
 
     def initialize_database(self):
         """Create all tables and seed defaults. Idempotent."""

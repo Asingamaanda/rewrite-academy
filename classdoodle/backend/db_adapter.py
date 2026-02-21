@@ -37,7 +37,10 @@ def _ensure_pool():
             if _pool is None:
                 import psycopg2.pool
                 url = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-                _pool = psycopg2.pool.ThreadedConnectionPool(1, 10, url)
+                try:
+                    _pool = psycopg2.pool.ThreadedConnectionPool(0, 10, url)
+                except Exception as e:
+                    raise RuntimeError(f"Cannot connect to PostgreSQL: {e}") from e
     return _pool
 
 

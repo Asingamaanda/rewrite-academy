@@ -48,7 +48,20 @@ def format_number(value):
         return value
 
 # schema is handled entirely by ClassDoodleDB.initialize_database() via db_adapter
-api = ClassDoodleAPI()
+api = ClassDoodleAPI()   # DB init is fault-tolerant; retried on first request if DB not ready
+
+
+# ==================== STARTUP RETRY ====================
+
+@app.before_request
+def _ensure_db():
+    """If the DB wasn't ready at startup, retry on each request until it is."""
+    try:
+        api.db.ensure_initialized()
+    except Exception as e:
+        # Still not ready — log and let Flask serve the request.
+        # Routes that actually need the DB will fail gracefully.
+        print(f"DB not ready yet: {e}")
 
 
 # ==================== AUTH HELPERS ====================
