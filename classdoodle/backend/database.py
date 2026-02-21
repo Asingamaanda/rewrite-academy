@@ -239,6 +239,48 @@ class ClassDoodleDB:
         """)
         conn.commit()
 
+        # ── Indexes ──────────────────────────────────────────────────────────
+        # CREATE INDEX IF NOT EXISTS is a no-op if the index already exists,
+        # so these are safe to run on every startup.
+        _indexes = [
+            # students — lookup by student_id and risk filters
+            "CREATE INDEX IF NOT EXISTS idx_students_student_id     ON students(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_students_academic_risk  ON students(academic_risk)",
+            "CREATE INDEX IF NOT EXISTS idx_students_attendance_risk ON students(attendance_risk)",
+            "CREATE INDEX IF NOT EXISTS idx_students_payment_risk   ON students(payment_risk)",
+            "CREATE INDEX IF NOT EXISTS idx_students_status         ON students(status)",
+            # student_subjects — join / filter by student and subject
+            "CREATE INDEX IF NOT EXISTS idx_ss_student_id           ON student_subjects(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_ss_subject              ON student_subjects(subject)",
+            # assessments — the most queried table
+            "CREATE INDEX IF NOT EXISTS idx_assess_student_id       ON assessments(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_assess_subject          ON assessments(subject)",
+            "CREATE INDEX IF NOT EXISTS idx_assess_date             ON assessments(date)",
+            "CREATE INDEX IF NOT EXISTS idx_assess_student_subject  ON assessments(student_id, subject)",
+            # attendance
+            "CREATE INDEX IF NOT EXISTS idx_attend_student_id       ON attendance(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_attend_date             ON attendance(date)",
+            "CREATE INDEX IF NOT EXISTS idx_attend_subject          ON attendance(subject)",
+            # payments
+            "CREATE INDEX IF NOT EXISTS idx_payments_student_id     ON payments(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_payments_status         ON payments(status)",
+            # progress snapshots
+            "CREATE INDEX IF NOT EXISTS idx_snapshots_student_id    ON progress_snapshots(student_id)",
+            # automation alerts
+            "CREATE INDEX IF NOT EXISTS idx_alerts_student_id       ON automation_alerts(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_alerts_resolved         ON automation_alerts(resolved)",
+            # timetable
+            "CREATE INDEX IF NOT EXISTS idx_tt_student_id           ON timetable_slots(student_id)",
+            # user accounts
+            "CREATE INDEX IF NOT EXISTS idx_users_student_id        ON user_accounts(student_id)",
+        ]
+        for _idx_sql in _indexes:
+            try:
+                cur.execute(_idx_sql)
+            except Exception:
+                pass  # index may already exist under a different engine
+        conn.commit()
+
         # Live migrations
         if POSTGRES:
             for sql in [
