@@ -11,9 +11,6 @@ from datetime import datetime, date, timedelta
 from pathlib import Path
 import sqlite3
 import os
-import sys
-
-sys.path.append(str(Path(__file__).parent / 'backend'))
 
 from backend.api import ClassDoodleAPI
 from backend import automation
