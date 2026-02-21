@@ -27,6 +27,9 @@ if not _secret:
     # Local dev only — deterministic fallback, never used in production.
     _secret = 'classdoodle-dev-only-2026'
 app.secret_key = _secret
+app.config['SESSION_COOKIE_SECURE']   = bool(os.environ.get('RENDER'))   # HTTPS-only on Render
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 # File upload config
 UPLOAD_FOLDER = Path(__file__).parent / 'static' / 'uploads' / 'manlib'
