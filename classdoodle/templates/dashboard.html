@@ -1,221 +1,346 @@
 {% extends "base.html" %}
+{# INTELLIGENCE DASHBOARD — Rewrite Academy #}
 
-{% block title %}Dashboard - Rewrite Academy{% endblock %}
+{% block title %}Intelligence Dashboard - Rewrite Academy{% endblock %}
 
 {% block content %}
 
-<!-- Hero Section -->
+{# ─── CSS helpers scoped to this page ──────────────────────────────────────── #}
+<style>
+.intel-badge{display:inline-block;padding:.25rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.03em}
+.badge-critical{background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35)}
+.badge-high{background:rgba(251,191,36,.2);color:#fde68a;border:1px solid rgba(251,191,36,.35)}
+.badge-medium{background:rgba(147,197,253,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.3)}
+.badge-ok{background:rgba(52,211,153,.15);color:#6ee7b7;border:1px solid rgba(52,211,153,.3)}
+.spark-bar{display:flex;align-items:flex-end;gap:3px;height:40px}
+.spark-bar span{flex:1;background:rgba(212,175,55,.45);border-radius:3px 3px 0 0;transition:.3s}
+.heatbar-wrap{margin-bottom:.9rem}
+.heatbar-track{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:.25rem}
+.heatbar-fill{height:100%;border-radius:999px;transition:width .5s ease}
+.risk-col{text-align:center;padding:1.2rem .5rem;border-radius:12px}
+.risk-big{font-size:2.4rem;font-weight:900}
+</style>
+
+{# ─── HERO ─────────────────────────────────────────────────────────────────── #}
 <div class="glass-container mb-4" data-animate>
-    <div style="text-align: center;">
-        <h1 class="section-title">
-            Welcome to <span class="text-gold">Rewrite Academy</span>
-        </h1>
-        <p style="font-size: 1.1rem; opacity: 0.9; margin-bottom: 0;">{{ today }}</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+        <div>
+            <h1 style="font-size:1.8rem;font-weight:900;margin:0">
+                Intelligence <span class="text-gold">Dashboard</span>
+            </h1>
+            <p style="opacity:.7;margin:.25rem 0 0">{{ today }}</p>
+        </div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+            <a href="/students" class="btn-cinematic btn-outline" style="font-size:.85rem;padding:.55rem 1.2rem">All Students</a>
+            <a href="/student/add" class="btn-cinematic" style="font-size:.85rem;padding:.55rem 1.2rem">+ Add Student</a>
+        </div>
     </div>
 </div>
 
-<!-- Key Metrics Grid -->
+{# ─── KPI STRIP ────────────────────────────────────────────────────────────── #}
 <div class="grid grid-cols-4 mb-4" data-animate>
-    <!-- Overall Average -->
+
+    {# Overall Average #}
     <div class="card-cinematic">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-            <div>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">Overall Average</p>
-                <h2 style="font-size: 3rem; font-weight: 900; margin: 0;" class="text-gold">{{ stats.class_average }}%</h2>
-            </div>
-            <div style="width: 50px; height: 50px; background: rgba(212,175,55,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 1.5rem;">📊</span>
-            </div>
-        </div>
-        <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width: {{ stats.class_average }}%"></div>
-        </div>
+        <p style="color:rgba(255,255,255,.65);font-size:.85rem;margin-bottom:.4rem">Class Average</p>
+        <h2 class="text-gold" style="font-size:2.8rem;font-weight:900;margin:0">{{ stats.class_average }}%</h2>
+        <div class="progress-bar-bg" style="margin-top:.8rem"><div class="progress-bar-fill" style="width:{{ stats.class_average }}%"></div></div>
     </div>
-    
-    <!-- Total Students -->
+
+    {# Students #}
     <div class="card-cinematic">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">Total Students</p>
-                <h2 style="font-size: 3rem; font-weight: 900; margin: 0;" class="text-gold">{{ stats.total_students }}</h2>
-                <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 0.5rem;">Active learners</p>
-            </div>
-            <div style="width: 50px; height: 50px; background: rgba(147,51,234,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-<span style="font-size: 1.5rem;">👥</span>
-            </div>
-        </div>
+        <p style="color:rgba(255,255,255,.65);font-size:.85rem;margin-bottom:.4rem">Active Students</p>
+        <h2 class="text-gold" style="font-size:2.8rem;font-weight:900;margin:0">{{ intel.total_students }}</h2>
+        <p style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:.5rem">enrolled this term</p>
     </div>
-    
-    <!-- Attendance Today -->
+
+    {# Revenue collected #}
     <div class="card-cinematic">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">Attendance Today</p>
-                {% set total_present = namespace(value=0) %}
-                {% set total_count = namespace(value=0) %}
-                {% for subject, data in stats.attendance_today.get('by_subject', {}).items() %}
-                    {% set total_present.value = total_present.value + data.present %}
-                    {% set total_count.value = total_count.value + data.total %}
-                {% endfor %}
-                <h2 style="font-size: 3rem; font-weight: 900; margin: 0;" class="text-gold">
-                    {% if total_count.value > 0 %}
-                        {{ ((total_present.value / total_count.value * 100)|round(0)|int) }}%
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </h2>
-                <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 0.5rem;">
-                    {% if total_count.value > 0 %}
-                        {{ total_present.value }} / {{ total_count.value }} present
-                    {% else %}
-                        No classes today
-                    {% endif %}
-                </p>
-            </div>
-            <div style="width: 50px; height: 50px; background: rgba(16,185,129,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 1.5rem;">✓</span>
-            </div>
-        </div>
+        <p style="color:rgba(255,255,255,.65);font-size:.85rem;margin-bottom:.4rem">Revenue Collected</p>
+        <h2 class="text-gold" style="font-size:2.4rem;font-weight:900;margin:0">R{{ "{:,.0f}".format(intel.revenue.collected) }}</h2>
+        <p style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:.5rem">{{ intel.revenue.collection_rate }}% of expected</p>
     </div>
-    
-    <!-- At-Risk Students -->
+
+    {# Interventions #}
     <div class="card-cinematic">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 0.5rem;">Need Attention</p>
-                <h2 style="font-size: 3rem; font-weight: 900; margin: 0;" class="text-gold">
-                    {{ stats.at_risk + stats.medium_risk }}
-                </h2>
-                <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 0.5rem;">Students at risk</p>
-            </div>
-            <div style="width: 50px; height: 50px; background: rgba(239,68,68,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 1.5rem;">⚠️</span>
-            </div>
-        </div>
+        <p style="color:rgba(255,255,255,.65);font-size:.85rem;margin-bottom:.4rem">Need Intervention</p>
+        <h2 style="font-size:2.8rem;font-weight:900;margin:0;color:#f87171">{{ intel.intervention|length }}</h2>
+        <p style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:.5rem">students flagged</p>
     </div>
+
 </div>
 
-<!-- Alerts Section -->
-{% if payment_status.outstanding_count > 0 or at_risk_students %}
-<div class="grid grid-cols-2 mb-4" data-animate>
-    
-    <!-- Payment Alerts -->
-    {% if payment_status.outstanding_count > 0 %}
-    <div class="card-cinematic" style="border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.05);">
-        <div style="display: flex; align-items: start; gap: 1rem;">
-            <div style="width: 50px; height: 50px; background: rgba(251,191,36,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span style="font-size: 1.5rem;">💳</span>
+{# ─── ROW A: Performance Radar + Risk Meter ───────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem" data-animate>
+
+    {# Performance Radar — weekly class trend #}
+    <div class="card-cinematic">
+        <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Weekly Performance <span class="text-gold">Trend</span></h3>
+        {% if intel.performance_trend %}
+            {% set max_avg = intel.performance_trend | map(attribute='class_avg') | select('ne', none) | list | max %}
+            {% set max_avg = [max_avg, 1] | max %}
+            <div class="spark-bar" style="height:80px;align-items:flex-end">
+            {% for wk in intel.performance_trend %}
+                {% set pct = ((wk.class_avg or 0) / max_avg * 100)|int %}
+                <span title="Week {{ wk.week }}: {{ wk.class_avg }}%"
+                      style="height:{{ pct }}%;min-height:6px;background:{% if (wk.class_avg or 0) >= 60 %}rgba(212,175,55,.7){% elif (wk.class_avg or 0) >= 45 %}rgba(251,191,36,.5){% else %}rgba(239,68,68,.5){% endif %}"></span>
+            {% endfor %}
             </div>
-            <div style="flex: 1;">
-                <h3 style="color: #fbbf24; margin-bottom: 0.5rem; font-size: 1.1rem;">Outstanding Payments</h3>
-                <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">{{ payment_status.outstanding_count }} student(s) have pending payments</p>
-                <a href="/payments" class="btn-cinematic btn-outline" style="font-size: 0.85rem; padding: 0.6rem 1.5rem;">View Details →</a>
+            <div style="display:flex;justify-content:space-between;margin-top:.5rem">
+            {% for wk in intel.performance_trend %}
+                <span style="font-size:.65rem;color:rgba(255,255,255,.4)">W{{ loop.index }}</span>
+            {% endfor %}
             </div>
+            <p style="margin-top:1rem;font-size:.85rem;color:rgba(255,255,255,.6)">
+                Latest: <strong style="color:#d4af37">{{ intel.performance_trend[-1].class_avg }}%</strong>
+                &nbsp;·&nbsp; {{ intel.performance_trend|length }} weeks tracked
+            </p>
+        {% else %}
+            <p style="color:rgba(255,255,255,.4);text-align:center;padding:2rem 0">No snapshot data yet</p>
+        {% endif %}
+    </div>
+
+    {# Risk Meter #}
+    <div class="card-cinematic">
+        <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Risk <span class="text-gold">Meter</span></h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem">
+
+            {# Academic #}
+            <div class="risk-col" style="background:rgba(239,68,68,.07)">
+                <p style="font-size:.72rem;color:rgba(255,255,255,.55);margin-bottom:.4rem">ACADEMIC</p>
+                <div class="risk-big" style="color:#f87171">{{ (intel.risk.academic.get('critical',0) + intel.risk.academic.get('needs_support',0)) }}</div>
+                <p style="font-size:.72rem;color:rgba(255,255,255,.45);margin-top:.3rem">at risk</p>
+                {% if intel.risk.academic.get('critical',0) %}<span class="intel-badge badge-critical">{{ intel.risk.academic.critical }} critical</span>{% endif %}
+            </div>
+
+            {# Attendance #}
+            <div class="risk-col" style="background:rgba(251,191,36,.07)">
+                <p style="font-size:.72rem;color:rgba(255,255,255,.55);margin-bottom:.4rem">ATTENDANCE</p>
+                <div class="risk-big" style="color:#fde68a">{{ intel.risk.attendance.get('at_risk',0) }}</div>
+                <p style="font-size:.72rem;color:rgba(255,255,255,.45);margin-top:.3rem">below 75%</p>
+            </div>
+
+            {# Payment #}
+            <div class="risk-col" style="background:rgba(147,197,253,.06)">
+                <p style="font-size:.72rem;color:rgba(255,255,255,.55);margin-bottom:.4rem">PAYMENT</p>
+                <div class="risk-big" style="color:#93c5fd">{{ (intel.risk.payment.get('outstanding',0) + intel.risk.payment.get('restricted',0)) }}</div>
+                <p style="font-size:.72rem;color:rgba(255,255,255,.45);margin-top:.3rem">outstanding</p>
+                {% if intel.risk.payment.get('restricted',0) %}<span class="intel-badge badge-critical">{{ intel.risk.payment.restricted }} restricted</span>{% endif %}
+            </div>
+
         </div>
     </div>
-    {% endif %}
-    
-    <!-- At-Risk Students -->
-    {% if at_risk_students %}
-    <div class="card-cinematic" style="border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.05);">
-        <div style="display: flex; align-items: start; gap: 1rem;">
-            <div style="width: 50px; height: 50px; background: rgba(239,68,68,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span style="font-size: 1.5rem;">📉</span>
+
+</div>
+
+{# ─── ROW B: Revenue Stability + Subject Heatmap ─────────────────────────── #}
+<div style="display:grid;grid-template-columns:5fr 7fr;gap:1.5rem;margin-bottom:1.5rem" data-animate>
+
+    {# Revenue Stability Index #}
+    <div class="card-cinematic">
+        <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Revenue Stability <span class="text-gold">Index</span></h3>
+        <div style="display:flex;justify-content:space-between;margin-bottom:1rem">
+            <div>
+                <p style="color:rgba(255,255,255,.55);font-size:.8rem">Collected</p>
+                <p style="font-size:1.5rem;font-weight:800;color:#6ee7b7">R{{ "{:,.0f}".format(intel.revenue.collected) }}</p>
             </div>
-            <div style="flex: 1;">
-                <h3 style="color: #ef4444; margin-bottom: 0.5rem; font-size: 1.1rem;">Students Need Support</h3>
-                <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">{{ at_risk_students|length }} student(s) performing below 50%</p>
-                <div style="margin-bottom: 1rem;">
-                    {% for student in at_risk_students[:3] %}
-                    <a href="/student/{{ student.student_id }}" style="display: block; color: rgba(255,255,255,0.9); text-decoration: none; margin-bottom: 0.4rem; opacity: 0.9;">
-                        • {{ student.name }} ({{ student.overall_average }}%)
-                    </a>
-                    {% endfor %}
+            <div style="text-align:right">
+                <p style="color:rgba(255,255,255,.55);font-size:.8rem">Expected</p>
+                <p style="font-size:1.5rem;font-weight:800;color:rgba(255,255,255,.8)">R{{ "{:,.0f}".format(intel.revenue.expected) }}</p>
+            </div>
+        </div>
+        <div class="heatbar-track">
+            <div class="heatbar-fill"
+                 style="width:{{ intel.revenue.collection_rate }}%;background:{% if intel.revenue.collection_rate >= 80 %}#10b981{% elif intel.revenue.collection_rate >= 50 %}#fbbf24{% else %}#ef4444{% endif %}"></div>
+        </div>
+        <p style="text-align:center;margin-top:.6rem;font-size:.85rem;color:rgba(255,255,255,.6)">
+            <strong style="color:#d4af37">{{ intel.revenue.collection_rate }}%</strong> collection rate this month
+        </p>
+        {% if payment_status.outstanding_count > 0 %}
+        <div style="margin-top:1rem;padding:.75rem;background:rgba(251,191,36,.08);border-radius:10px;border:1px solid rgba(251,191,36,.2)">
+            <span style="font-size:.85rem;color:#fde68a">⚠ {{ payment_status.outstanding_count }} outstanding payment(s) —
+            <a href="/payments" style="color:#fbbf24;text-decoration:underline">view</a></span>
+        </div>
+        {% endif %}
+    </div>
+
+    {# Subject Heatmap #}
+    <div class="card-cinematic" style="overflow:hidden">
+        <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Subject <span class="text-gold">Heatmap</span></h3>
+        {% if intel.subject_heatmap %}
+        <div style="max-height:260px;overflow-y:auto;padding-right:.25rem">
+        {% for row in intel.subject_heatmap %}
+            {% set pct = (row.avg_pct or 0) | float %}
+            {% if pct >= 70 %}{% set colour = '#10b981' %}
+            {% elif pct >= 50 %}{% set colour = '#fbbf24' %}
+            {% elif pct >= 35 %}{% set colour = '#f97316' %}
+            {% else %}{% set colour = '#ef4444' %}{% endif %}
+            <div class="heatbar-wrap">
+                <div style="display:flex;justify-content:space-between;font-size:.82rem">
+                    <span style="color:rgba(255,255,255,.8)">{{ row.subject }}</span>
+                    <span style="color:{{ colour }};font-weight:700">{{ pct }}%</span>
+                </div>
+                <div class="heatbar-track">
+                    <div class="heatbar-fill" style="width:{{ pct }}%;background:{{ colour }}"></div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+        {% else %}
+            <p style="color:rgba(255,255,255,.4);text-align:center;padding:2rem 0">No assessment data yet</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{# ─── ROW C: Top Performers + Intervention ────────────────────────────────── #}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem" data-animate>
+
+    {# Top Performers #}
+    <div class="card-cinematic">
+        <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Top <span class="text-gold">Performers</span></h3>
+        {% if intel.top_performers %}
+        {% for st in intel.top_performers %}
+        <div style="display:flex;align-items:center;gap:.9rem;margin-bottom:.85rem">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(212,175,55,.15);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:#d4af37;flex-shrink:0">
+                {{ loop.index }}
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between">
+                    <a href="/student/{{ st.student_id }}" style="color:rgba(255,255,255,.9);text-decoration:none;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">{{ st.name }}</a>
+                    <span style="color:#6ee7b7;font-weight:700;font-size:.9rem">{{ st.avg_pct }}%</span>
+                </div>
+                <div class="progress-bar-bg" style="margin-top:.35rem;height:5px">
+                    <div class="progress-bar-fill" style="width:{{ st.avg_pct }}%;background:#10b981;height:5px"></div>
                 </div>
             </div>
         </div>
+        {% endfor %}
+        {% else %}
+            <p style="color:rgba(255,255,255,.4);text-align:center;padding:2rem 0">No assessment data yet</p>
+        {% endif %}
     </div>
-    {% endif %}
-    
+
+    {# Students Needing Intervention #}
+    <div class="card-cinematic">
+        <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Needs <span style="color:#f87171">Intervention</span></h3>
+        {% if intel.intervention %}
+        <div style="max-height:300px;overflow-y:auto;padding-right:.25rem">
+        {% for st in intel.intervention %}
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.9rem;padding:.75rem;background:rgba(239,68,68,.04);border-radius:10px;border:1px solid rgba(239,68,68,.12)">
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.3rem">
+                    <a href="/student/{{ st.student_id }}" style="color:rgba(255,255,255,.9);font-weight:600;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">{{ st.name }}</a>
+                    <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+                        {% if st.academic_risk == 'critical' %}<span class="intel-badge badge-critical">academic</span>
+                        {% elif st.academic_risk == 'needs_support' %}<span class="intel-badge badge-high">support</span>{% endif %}
+                        {% if st.attendance_risk == 'at_risk' %}<span class="intel-badge badge-high">attendance</span>{% endif %}
+                        {% if st.payment_risk in ('outstanding','restricted') %}<span class="intel-badge badge-medium">payment</span>{% endif %}
+                    </div>
+                </div>
+                {% if st.insight %}
+                <p style="font-size:.78rem;color:rgba(255,255,255,.5);margin:.3rem 0 0">{{ st.insight }}</p>
+                {% endif %}
+            </div>
+            <a href="/student/{{ st.student_id }}" style="color:#22d3ee;font-size:.8rem;white-space:nowrap;text-decoration:none;flex-shrink:0">View →</a>
+        </div>
+        {% endfor %}
+        </div>
+        {% else %}
+            <p style="color:rgba(52,211,153,.8);text-align:center;padding:2rem 0">No students flagged — great work! 🎉</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{# ─── LIVE ALERTS FEED ─────────────────────────────────────────────────────── #}
+{% if intel.alerts %}
+<div class="glass-container mb-4" data-animate>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+        <h3 style="margin:0;font-size:1.1rem">Live <span class="text-gold">Alerts</span>
+            <span class="intel-badge badge-critical" style="margin-left:.5rem;vertical-align:middle">{{ intel.alerts|length }}</span>
+        </h3>
+        <a href="/students" style="color:#22d3ee;font-size:.85rem;text-decoration:none">view all students →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.85rem">
+    {% for al in intel.alerts %}
+    <div style="padding:.9rem 1rem;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:.8rem">
+        <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <a href="/student/{{ al.student_id }}" style="font-weight:600;color:rgba(255,255,255,.88);text-decoration:none;font-size:.9rem">{{ al.name }}</a>
+                <span style="font-size:.7rem;color:rgba(255,255,255,.35)">{{ al.created_at[:10] if al.created_at else '' }}</span>
+            </div>
+            <p style="font-size:.8rem;color:rgba(255,255,255,.55);margin:.3rem 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ al.message }}</p>
+        </div>
+        <form method="POST" action="/admin/risk-alerts/resolve/{{ al.id }}?next=/dashboard" style="flex-shrink:0">
+            <button type="submit" title="Mark resolved" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);color:#6ee7b7;border-radius:6px;padding:.3rem .6rem;cursor:pointer;font-size:.75rem">✓</button>
+        </form>
+    </div>
+    {% endfor %}
+    </div>
 </div>
 {% endif %}
 
-<!-- Today's Schedule -->
+{# ─── TODAY'S SCHEDULE ────────────────────────────────────────────────────── #}
 <div class="glass-container mb-4" data-animate>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h2 style="font-size: 1.75rem; margin: 0;">Today's <span class="text-gold">Schedule</span></h2>
-        <a href="/timetable" style="color: #22d3ee; text-decoration: none; font-weight: 500;">View full timetable →</a>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+        <h2 style="font-size:1.5rem;margin:0">Today's <span class="text-gold">Schedule</span></h2>
+        <a href="/timetable" style="color:#22d3ee;text-decoration:none;font-weight:500">Full timetable →</a>
     </div>
-    
     {% if schedule %}
     <div class="grid grid-cols-3">
         {% for item in schedule %}
         {% if item.type == 'period' %}
         <div class="card-cinematic">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:.8rem">
                 <div>
-                    <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 0.3rem;">{{ item.time }}</p>
-                    <h3 style="color: #22d3ee; font-size: 1.1rem; margin: 0;">{{ item.subject }}</h3>
+                    <p style="color:rgba(255,255,255,.55);font-size:.8rem;margin-bottom:.25rem">{{ item.time }}</p>
+                    <h3 style="color:#22d3ee;font-size:1rem;margin:0">{{ item.subject }}</h3>
                 </div>
-                <div style="width: 40px; height: 40px; background: rgba(212,175,55,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 1.2rem;">📚</span>
-                </div>
+                <span style="font-size:1.3rem">📚</span>
             </div>
-            <a href="/attendance?date={{ today }}" class="btn-cinematic btn-outline" style="width: 100%; text-align: center; font-size: 0.85rem; padding: 0.7rem;">Take Attendance</a>
+            <a href="/attendance" class="btn-cinematic btn-outline" style="width:100%;text-align:center;font-size:.8rem;padding:.6rem">Take Attendance</a>
         </div>
-        {% elif item.type == 'break' %}
-        <div class="card-cinematic" style="background: rgba(26,26,26,0.2); border-color: rgba(255,255,255,0.1);">
-            <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-bottom: 0.3rem;">{{ item.time }}</p>
-            <p style="color: rgba(255,255,255,0.7); margin: 0;">{{ item.subject }}</p>
+        {% else %}
+        <div class="card-cinematic" style="background:rgba(26,26,26,.2);border-color:rgba(255,255,255,.07)">
+            <p style="color:rgba(255,255,255,.45);font-size:.8rem;margin-bottom:.2rem">{{ item.time }}</p>
+            <p style="color:rgba(255,255,255,.6);margin:0">{{ item.subject }}</p>
         </div>
         {% endif %}
         {% endfor %}
     </div>
     {% else %}
-    <div style="text-align: center; padding: 4rem 2rem;">
-        <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-            <span style="font-size: 2.5rem;">📅</span>
-        </div>
-        <h3 style="color: rgba(255,255,255,0.9); margin-bottom: 0.5rem;">No Classes Today</h3>
-        <p style="color: rgba(255,255,255,0.6);">Enjoy your day off!</p>
+    <div style="text-align:center;padding:3rem 2rem">
+        <span style="font-size:3rem">📅</span>
+        <h3 style="color:rgba(255,255,255,.8);margin:.8rem 0 .4rem">No Classes Today</h3>
+        <p style="color:rgba(255,255,255,.5)">Enjoy your day off!</p>
     </div>
     {% endif %}
 </div>
 
-<!-- Quick Actions -->
+{# ─── QUICK ACTIONS ───────────────────────────────────────────────────────── #}
 <div class="glass-container" data-animate>
-    <h2 style="font-size: 1.75rem; margin-bottom: 2rem;">Quick <span class="text-gold">Actions</span></h2>
+    <h2 style="font-size:1.5rem;margin-bottom:1.5rem">Quick <span class="text-gold">Actions</span></h2>
     <div class="grid grid-cols-4">
-        <a href="/student/add" class="card-cinematic" style="text-decoration: none; text-align: center; display: block;">
-            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #0891b2, #22d3ee); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                <span style="font-size: 1.8rem;">➕</span>
-            </div>
-            <h4 style="color: #22d3ee; margin-bottom: 0.5rem;">Add Student</h4>
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Register new student</p>
+        <a href="/student/add" class="card-cinematic" style="text-decoration:none;text-align:center;display:block">
+            <div style="width:56px;height:56px;background:linear-gradient(135deg,#0891b2,#22d3ee);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto .9rem"><span style="font-size:1.6rem">➕</span></div>
+            <h4 style="color:#22d3ee;margin-bottom:.3rem">Add Student</h4>
+            <p style="color:rgba(255,255,255,.55);font-size:.8rem">Register new student</p>
         </a>
-        
-        <a href="/attendance" class="card-cinematic" style="text-decoration: none; text-align: center; display: block;">
-            <div style="width: 60px; height: 60px; background: rgba(16,185,129,0.3); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                <span style="font-size: 1.8rem;">✓</span>
-            </div>
-            <h4 style="color: #10b981; margin-bottom: 0.5rem;">Mark Attendance</h4>
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Take class attendance</p>
+        <a href="/attendance" class="card-cinematic" style="text-decoration:none;text-align:center;display:block">
+            <div style="width:56px;height:56px;background:rgba(16,185,129,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto .9rem"><span style="font-size:1.6rem">✓</span></div>
+            <h4 style="color:#10b981;margin-bottom:.3rem">Mark Attendance</h4>
+            <p style="color:rgba(255,255,255,.55);font-size:.8rem">Take class attendance</p>
         </a>
-        
-        <a href="/assessments" class="card-cinematic" style="text-decoration: none; text-align: center; display: block;">
-            <div style="width: 60px; height: 60px; background: rgba(147,51,234,0.3); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                <span style="font-size: 1.8rem;">📝</span>
-            </div>
-            <h4 style="color: #9333ea; margin-bottom: 0.5rem;">Record Assessment</h4>
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Add test scores</p>
+        <a href="/assessments" class="card-cinematic" style="text-decoration:none;text-align:center;display:block">
+            <div style="width:56px;height:56px;background:rgba(147,51,234,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto .9rem"><span style="font-size:1.6rem">📝</span></div>
+            <h4 style="color:#9333ea;margin-bottom:.3rem">Record Assessment</h4>
+            <p style="color:rgba(255,255,255,.55);font-size:.8rem">Add test scores</p>
         </a>
-        
-        <a href="/payments" class="card-cinematic" style="text-decoration: none; text-align: center; display: block;">
-            <div style="width: 60px; height: 60px; background: rgba(251,191,36,0.3); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                <span style="font-size: 1.8rem;">💰</span>
-            </div>
-            <h4 style="color: #fbbf24; margin-bottom: 0.5rem;">Record Payment</h4>
-            <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Log student payment</p>
+        <a href="/payments" class="card-cinematic" style="text-decoration:none;text-align:center;display:block">
+            <div style="width:56px;height:56px;background:rgba(251,191,36,.3);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto .9rem"><span style="font-size:1.6rem">💰</span></div>
+            <h4 style="color:#fbbf24;margin-bottom:.3rem">Record Payment</h4>
+            <p style="color:rgba(255,255,255,.55);font-size:.8rem">Log student payment</p>
         </a>
     </div>
 </div>

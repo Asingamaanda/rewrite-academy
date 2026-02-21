@@ -13,7 +13,7 @@ import os
 
 from backend.db_adapter import get_connection, release_connection, qexec, PH
 from backend.api import ClassDoodleAPI
-from backend import automation
+from backend import automation, intelligence
 from backend.mailer import send_application_email, send_whatsapp_notification
 from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
 
@@ -261,12 +261,14 @@ def dashboard():
     payment_status = api.get_payment_status(current_month)
     class_summary = api.get_class_performance_summary()
     at_risk_students = [s for s in class_summary['students'] if s['risk_level'] == 'high'][:5]
+    intel = intelligence.get_dashboard_intelligence()
     return render_template('dashboard.html',
                          today=today.strftime('%A, %d %B %Y'),
                          schedule=schedule, stats=stats,
                          payment_status=payment_status,
                          at_risk_students=at_risk_students,
-                         day_name=day_name)
+                         day_name=day_name,
+                         intel=intel)
 
 
 # ==================== STUDENTS (ADMIN) ====================
@@ -520,6 +522,9 @@ def risk_alerts():
 def resolve_alert(alert_id):
     automation.resolve_alert(alert_id)
     flash('Alert resolved.', 'success')
+    next_page = request.args.get('next') or request.form.get('next')
+    if next_page and next_page.startswith('/'):
+        return redirect(next_page)
     return redirect(url_for('risk_alerts'))
 
 
