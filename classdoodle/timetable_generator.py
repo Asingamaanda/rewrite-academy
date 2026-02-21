@@ -8,16 +8,20 @@ import json
 
 # ========== MATRIC SUBJECTS ==========
 CORE_SUBJECTS = {
-    "English":             {"periods_per_week": 5, "color": "#45B7D1"},
-    "Life Sciences":       {"periods_per_week": 5, "color": "#96CEB4"},
-    "Math Lit":            {"periods_per_week": 5, "color": "#FDCB6E"},
-    "Business Studies":    {"periods_per_week": 4, "color": "#A29BFE"},
-    "Geography":           {"periods_per_week": 4, "color": "#55EFC4"},
-    "History":             {"periods_per_week": 4, "color": "#FAB1A0"},
-    "Physical Sciences":   {"periods_per_week": 5, "color": "#74B9FF"},
-    "Mathematics":         {"periods_per_week": 6, "color": "#FF6B6B"},
-    "Economics":           {"periods_per_week": 4, "color": "#FFEAA7"},
-    "EGD":                 {"periods_per_week": 3, "color": "#B2BEC3"},
+    "English":               {"periods_per_week": 5, "color": "#45B7D1"},
+    "Life Sciences":         {"periods_per_week": 5, "color": "#96CEB4"},
+    "Math Lit":              {"periods_per_week": 5, "color": "#FDCB6E"},
+    "Business Studies":      {"periods_per_week": 4, "color": "#A29BFE"},
+    "Geography":             {"periods_per_week": 4, "color": "#55EFC4"},
+    "History":               {"periods_per_week": 4, "color": "#FAB1A0"},
+    "Physical Sciences":     {"periods_per_week": 5, "color": "#74B9FF"},
+    "Mathematics":           {"periods_per_week": 6, "color": "#FF6B6B"},
+    "Economics":             {"periods_per_week": 4, "color": "#FFEAA7"},
+    "EGD":                   {"periods_per_week": 3, "color": "#B2BEC3"},
+    "Agriculture":           {"periods_per_week": 4, "color": "#6AB04C"},
+    "Hospitality Studies":   {"periods_per_week": 4, "color": "#E84393"},
+    "Technical Mathematics": {"periods_per_week": 5, "color": "#F0932B"},
+    "Technical Sciences":    {"periods_per_week": 5, "color": "#686DE0"},
 }
 
 # ========== TIME SLOTS (7:00 AM - 1:00 PM) ==========
