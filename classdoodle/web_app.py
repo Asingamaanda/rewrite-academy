@@ -18,7 +18,15 @@ from backend.mailer import send_application_email, send_whatsapp_notification
 from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'classdoodle-secret-key-2026')
+_secret = os.environ.get('SECRET_KEY')
+if not _secret:
+    import sys as _sys
+    if os.environ.get('RENDER') or os.environ.get('PRODUCTION'):
+        print('FATAL: SECRET_KEY env var is not set. Refusing to start.', file=_sys.stderr)
+        _sys.exit(1)
+    # Local dev only — deterministic fallback, never used in production.
+    _secret = 'classdoodle-dev-only-2026'
+app.secret_key = _secret
 
 # File upload config
 UPLOAD_FOLDER = Path(__file__).parent / 'static' / 'uploads' / 'manlib'

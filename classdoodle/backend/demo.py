@@ -11,6 +11,9 @@ from backend.api import ClassDoodleAPI
 from datetime import date, timedelta
 import random
 
+# Fixed seed — identical demo data on every run (strict determinism).
+_rng = random.Random(42)
+
 
 def demo_backend():
     """Demonstrate all backend features"""
@@ -77,9 +80,9 @@ def demo_backend():
     for student_id in student_ids:
         for subject in subjects:
             # Add 4 assessments with varying scores
-            base_score = random.randint(50, 90)
+            base_score = _rng.randint(50, 90)
             for i in range(4):
-                score = base_score + random.randint(-10, 10)
+                score = base_score + _rng.randint(-10, 10)
                 score = max(0, min(100, score))  # Keep between 0-100
                 
                 api.record_assessment(

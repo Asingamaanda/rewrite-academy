@@ -18,4 +18,7 @@ services:
           name: rewrite-academy-db
           property: connectionString
       - key: SECRET_KEY
-        generateValue: true
+        # Set this ONCE in the Render dashboard as a manual env var.
+        # A stable, explicit value is required — never auto-generated —
+        # so sessions survive service restarts and redeployments.
+        # Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
