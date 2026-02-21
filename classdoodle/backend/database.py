@@ -57,7 +57,8 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS student_subjects (
                 id         {SERIAL_PK},
-                student_id TEXT NOT NULL,
+                student_id TEXT NOT NULL
+                           REFERENCES students(student_id) ON DELETE CASCADE,
                 subject    TEXT NOT NULL,
                 UNIQUE(student_id, subject)
             )
@@ -65,7 +66,8 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS attendance (
                 id         {SERIAL_PK},
-                student_id TEXT NOT NULL,
+                student_id TEXT NOT NULL
+                           REFERENCES students(student_id) ON DELETE CASCADE,
                 date       DATE NOT NULL,
                 time_slot  TEXT NOT NULL,
                 subject    TEXT NOT NULL,
@@ -77,12 +79,13 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS assessments (
                 id              {SERIAL_PK},
-                student_id      TEXT NOT NULL,
+                student_id      TEXT NOT NULL
+                                REFERENCES students(student_id) ON DELETE CASCADE,
                 subject         TEXT NOT NULL,
                 assessment_type TEXT NOT NULL,
                 score           REAL NOT NULL,
-                max_score       REAL DEFAULT 100,
-                weight          REAL DEFAULT 1,
+                max_score       REAL NOT NULL DEFAULT 100,
+                weight          REAL NOT NULL DEFAULT 1,
                 date            DATE NOT NULL,
                 notes           TEXT,
                 created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -91,14 +94,15 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS payments (
                 id             {SERIAL_PK},
-                student_id     TEXT NOT NULL,
+                student_id     TEXT NOT NULL
+                               REFERENCES students(student_id) ON DELETE CASCADE,
                 amount         REAL NOT NULL,
                 payment_date   DATE,
                 due_date       DATE,
                 payment_method TEXT,
                 reference      TEXT,
                 month_for      TEXT NOT NULL,
-                status         TEXT DEFAULT 'pending',
+                status         TEXT NOT NULL DEFAULT 'pending',
                 notes          TEXT,
                 created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -161,7 +165,8 @@ class ClassDoodleDB:
                 username      TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
                 role          TEXT NOT NULL CHECK(role IN ('admin','teacher','student')),
-                student_id    TEXT,
+                student_id    TEXT
+                              REFERENCES students(student_id) ON DELETE SET NULL,
                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -183,14 +188,15 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS timetable_slots (
                 id         {SERIAL_PK},
-                student_id TEXT,
+                student_id TEXT                              -- nullable = global slot
+                           REFERENCES students(student_id) ON DELETE CASCADE,
                 day        TEXT NOT NULL,
                 period     INTEGER NOT NULL,
                 subject    TEXT NOT NULL,
                 time_from  TEXT NOT NULL,
                 time_to    TEXT NOT NULL,
-                room       TEXT DEFAULT '',
-                teacher    TEXT DEFAULT '',
+                room       TEXT NOT NULL DEFAULT '',
+                teacher    TEXT NOT NULL DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -220,7 +226,8 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS progress_snapshots (
                 id         {SERIAL_PK},
-                student_id TEXT NOT NULL,
+                student_id TEXT NOT NULL
+                           REFERENCES students(student_id) ON DELETE CASCADE,
                 week       TEXT NOT NULL,
                 average    REAL NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -230,10 +237,11 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS automation_alerts (
                 id         {SERIAL_PK},
-                student_id TEXT NOT NULL,
+                student_id TEXT NOT NULL
+                           REFERENCES students(student_id) ON DELETE CASCADE,
                 alert_type TEXT NOT NULL,
                 message    TEXT NOT NULL,
-                resolved   INTEGER DEFAULT 0,
+                resolved   INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -292,6 +300,51 @@ class ClassDoodleDB:
             ]:
                 try: cur.execute(sql)
                 except Exception: pass
+
+            # ── FK constraints for existing Render DB ──────────────────────
+            # Uses DO $$ BEGIN ... END; $$ so the block is skipped if the
+            # constraint already exists (PG <15 has no ADD CONSTRAINT IF NOT EXISTS).
+            _fk_migrations = [
+                ("fk_ss_student",    "student_subjects",   "student_id", "CASCADE"),
+                ("fk_attend_student","attendance",         "student_id", "CASCADE"),
+                ("fk_assess_student","assessments",        "student_id", "CASCADE"),
+                ("fk_pay_student",   "payments",           "student_id", "CASCADE"),
+                ("fk_snap_student",  "progress_snapshots", "student_id", "CASCADE"),
+                ("fk_alert_student", "automation_alerts",  "student_id", "CASCADE"),
+                ("fk_tt_student",    "timetable_slots",    "student_id", "CASCADE"),
+            ]
+            for cname, table, col, on_delete in _fk_migrations:
+                try:
+                    cur.execute(f"""
+                        DO $$ BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM pg_constraint WHERE conname = '{cname}'
+                            ) THEN
+                                ALTER TABLE {table}
+                                ADD CONSTRAINT {cname}
+                                FOREIGN KEY ({col}) REFERENCES students(student_id)
+                                ON DELETE {on_delete};
+                            END IF;
+                        END; $$
+                    """)
+                except Exception:
+                    pass
+            # user_accounts.student_id is nullable → SET NULL on delete
+            try:
+                cur.execute("""
+                    DO $$ BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint WHERE conname = 'fk_ua_student'
+                        ) THEN
+                            ALTER TABLE user_accounts
+                            ADD CONSTRAINT fk_ua_student
+                            FOREIGN KEY (student_id) REFERENCES students(student_id)
+                            ON DELETE SET NULL;
+                        END IF;
+                    END; $$
+                """)
+            except Exception:
+                pass
         else:
             for sql in [
                 "ALTER TABLE students ADD COLUMN academic_risk TEXT DEFAULT 'on_track'",
