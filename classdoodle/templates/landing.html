@@ -344,8 +344,8 @@
         <a href="{{ portal_url }}" class="btn-primary">Go to My Portal</a>
         <a href="#pricing" class="btn-outline">View Pricing</a>
       {% else %}
-        <a href="/apply" class="btn-primary">Apply Now — It's Free</a>
-        <a href="/login" class="btn-outline">Sign In</a>
+        <a href="/apply" class="btn-primary">Apply Now</a>
+        <a href="#pricing" class="btn-outline">View Prices</a>
       {% endif %}
     </div>
   </div>
@@ -506,8 +506,11 @@
   <div class="container">
     <div class="cta-banner">
       <h2>Ready to rewrite your future?</h2>
-      <p>Fill in the application form. The teacher will call you within 24 hours.</p>
-      <a href="{{ '/apply' if not user_role else portal_url }}" class="btn-primary">{% if user_role %}Go to My Portal{% else %}Apply Now — It's Free{% endif %}</a>
+      <p>Fill in the application form. The teacher will call you within 24 hours to confirm your enrolment and fees.</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ '/apply' if not user_role else portal_url }}" class="btn-primary">{% if user_role %}Go to My Portal{% else %}Apply Now{% endif %}</a>
+        {% if not user_role %}<a href="#pricing" class="btn-outline">View Prices</a>{% endif %}
+      </div>
     </div>
   </div>
 </section>
