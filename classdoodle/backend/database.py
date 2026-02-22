@@ -423,6 +423,57 @@ class ClassDoodleDB:
                 """, ('ASI001',day,period,subject,t_from,t_to))
             conn.commit()
 
+        # Seed Mathematics notes (Grade 12 for Dummies, Lessons 1-8)
+        _math_lessons = [
+            (1, 'Lesson 1: Recognise Before You Solve',
+             'Quadratic pattern recognition -- identify and factorise quadratics by reverse thinking. '
+             'Covers ax^2+bx+c=0, factorisation strategy, graphical meaning of roots, common mistakes.',
+             'Quadratic equations | Factorisation | Pattern recognition | x-intercepts | Distributive law'),
+            (2, 'Lesson 2: The Geometry of Quadratics',
+             'Turning points, axis of symmetry and the discriminant. Finding the vertex using x=-b/2a, '
+             'graphing the parabola, using the discriminant to determine the nature of roots.',
+             'Parabola | Axis of symmetry | Turning point | Discriminant | Nature of roots'),
+            (3, 'Lesson 3: Inequalities and Sign Logic',
+             'Where expressions are positive or negative. Critical values, sign charts, open/closed '
+             'circles, exponential inequalities, quadratic inequalities with interval solutions.',
+             'Inequalities | Sign chart | Critical values | Exponential inequalities | Interval notation'),
+            (4, 'Lesson 4: Radical Equations and Domain Restrictions',
+             'Solving equations containing square roots. Domain restriction before solving, isolating '
+             'the radical, squaring both sides, checking for extraneous solutions.',
+             'Radical equations | Domain restriction | Extraneous solutions | Square root'),
+            (5, 'Lesson 5: Exponent Laws and Structural Simplification',
+             'Reducing complex exponent expressions before calculating. All exponent laws, negative and '
+             'fractional exponents, simplify-first mindset, graph of exponential functions.',
+             'Exponent laws | Negative exponents | Fractional exponents | Structural simplification'),
+            (6, 'Lesson 6: Simultaneous Equations and Case Branching',
+             'Solving systems of equations using substitution and the zero product principle. '
+             'Case branching when brackets multiply to zero, graphical intersection meaning.',
+             'Simultaneous equations | Zero product principle | Case branching | Substitution'),
+            (7, 'Lesson 7: Algebraic Identities and Symbol Manipulation',
+             'Compressed structures in algebraic expressions. Difference of squares, perfect square '
+             'trinomials, sum-and-product technique for abstract calculations.',
+             'Algebraic identities | Difference of squares | Perfect square | Sum and product'),
+            (8, 'Lesson 8: Mixed Exam Strategy and Problem Classification',
+             'Choosing the correct algebraic tool under exam conditions. Full classification system, '
+             'decision flow chart, time strategy, mixed practice, error detection exercises.',
+             'Exam strategy | Problem classification | Decision flow | Error detection | Mixed algebra'),
+        ]
+        _tex_path = 'uploads/subject_content/Mathematics/notes/grade12_mathematics_for_dummies.tex'
+        cur.execute(f"INSERT OR IGNORE INTO subjects (name,teacher,weight) VALUES ({PH},{PH},{PH})",
+                    ('Mathematics', '', 1.0))
+        # Only seed if no Mathematics notes exist yet
+        _existing = fetchone(conn,
+            f"SELECT id FROM subject_content WHERE subject={PH} AND content_type='notes' LIMIT 1",
+            ('Mathematics',))
+        if not _existing:
+            for _ord, _title, _desc, _ct in _math_lessons:
+                cur.execute(
+                    f"INSERT INTO subject_content "
+                    f"(subject,content_type,title,description,content_text,file_path,link_url,order_num) "
+                    f"VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})",
+                    ('Mathematics', 'notes', _title, _desc, _ct, _tex_path, '', _ord))
+            conn.commit()
+
         print("Database initialized successfully")
         release_connection(conn)
 
