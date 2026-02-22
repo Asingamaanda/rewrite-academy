@@ -169,9 +169,19 @@ def run_all() -> dict:
             }
             _snapshot_progress(conn, sid)
         conn.commit()
-        return results
     finally:
         release_connection(conn)
+
+    # Evaluate feedback loops for any interventions that are now ≥14 days old.
+    # Import here to avoid a circular dependency (intelligence imports db_adapter,
+    # not automation, so this direction is safe).
+    try:
+        from backend import intelligence as _intel
+        _intel.evaluate_feedback_loops()
+    except Exception:
+        pass  # never let a feedback error block the main automation run
+
+    return results
 
 
 def get_risk_summary() -> dict:

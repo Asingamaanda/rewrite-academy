@@ -245,6 +245,21 @@ class ClassDoodleDB:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS intervention_log (
+                id              {SERIAL_PK},
+                student_id      TEXT NOT NULL
+                                REFERENCES students(student_id) ON DELETE CASCADE,
+                alert_id        INTEGER,
+                rec_type        TEXT NOT NULL,
+                rec_action      TEXT NOT NULL,
+                note            TEXT DEFAULT '',
+                metric_snapshot TEXT DEFAULT '{{}}',
+                outcome         TEXT,
+                evaluated_at    TIMESTAMP,
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         conn.commit()
 
         # ── Indexes ──────────────────────────────────────────────────────────
@@ -281,6 +296,10 @@ class ClassDoodleDB:
             "CREATE INDEX IF NOT EXISTS idx_tt_student_id           ON timetable_slots(student_id)",
             # user accounts
             "CREATE INDEX IF NOT EXISTS idx_users_student_id        ON user_accounts(student_id)",
+            # intervention log
+            "CREATE INDEX IF NOT EXISTS idx_intv_student_id         ON intervention_log(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_intv_outcome            ON intervention_log(outcome)",
+            "CREATE INDEX IF NOT EXISTS idx_intv_created            ON intervention_log(created_at)",
         ]
         for _idx_sql in _indexes:
             try:
@@ -312,6 +331,7 @@ class ClassDoodleDB:
                 ("fk_snap_student",  "progress_snapshots", "student_id", "CASCADE"),
                 ("fk_alert_student", "automation_alerts",  "student_id", "CASCADE"),
                 ("fk_tt_student",    "timetable_slots",    "student_id", "CASCADE"),
+                ("fk_intv_student",  "intervention_log",   "student_id", "CASCADE"),
             ]
             for cname, table, col, on_delete in _fk_migrations:
                 try:

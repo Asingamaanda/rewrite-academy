@@ -528,6 +528,43 @@ def resolve_alert(alert_id):
     return redirect(url_for('risk_alerts'))
 
 
+@app.route('/admin/intervention/log', methods=['POST'])
+@admin_required
+def log_intervention():
+    """
+    Record that an admin acted on a recommendation (from the student profile
+    page or the intervention list).  POST fields: student_id, rec_type,
+    rec_action, note (optional), alert_id (optional).
+    Returns JSON { ok, id } so it can be called via fetch().
+    """
+    from flask import jsonify
+    data       = request.get_json(silent=True) or request.form
+    student_id = data.get('student_id', '').strip()
+    rec_type   = data.get('rec_type',   'manual').strip()
+    rec_action = data.get('rec_action', 'admin_action').strip()
+    note       = data.get('note',       '').strip()
+    alert_id   = data.get('alert_id')
+    try:
+        alert_id = int(alert_id) if alert_id else None
+    except (ValueError, TypeError):
+        alert_id = None
+
+    if not student_id:
+        return jsonify({'ok': False, 'error': 'student_id required'}), 400
+
+    new_id = intelligence.log_intervention(student_id, rec_type, rec_action, note, alert_id)
+    return jsonify({'ok': True, 'id': new_id})
+
+
+@app.route('/admin/intervention/evaluate', methods=['POST'])
+@admin_required
+def run_feedback_evaluation():
+    """Manually trigger feedback loop evaluation (normally called by automation)."""
+    from flask import jsonify
+    n = intelligence.evaluate_feedback_loops()
+    return jsonify({'ok': True, 'evaluated': n})
+
+
 # ==================== APPLICATIONS (ADMIN) ====================
 
 @app.route('/admin/applications')

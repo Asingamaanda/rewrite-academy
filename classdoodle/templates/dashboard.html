@@ -73,17 +73,17 @@
 {# ─── ROW A: Performance Radar + Risk Meter ───────────────────────────────── #}
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem" data-animate>
 
-    {# Performance Radar — weekly class trend #}
+    {# Performance Radar — weekly class trend (EWMA-smoothed) #}
     <div class="card-cinematic">
         <h3 style="margin:0 0 1.2rem;font-size:1.1rem">Weekly Performance <span class="text-gold">Trend</span></h3>
         {% if intel.performance_trend %}
-            {% set max_avg = intel.performance_trend | map(attribute='class_avg') | select('ne', none) | list | max %}
+            {% set max_avg = intel.performance_trend | map(attribute='smoothed_avg') | select('ne', none) | list | max %}
             {% set max_avg = [max_avg, 1] | max %}
             <div class="spark-bar" style="height:80px;align-items:flex-end">
             {% for wk in intel.performance_trend %}
-                {% set pct = ((wk.class_avg or 0) / max_avg * 100)|int %}
-                <span title="Week {{ wk.week }}: {{ wk.class_avg }}%"
-                      style="height:{{ pct }}%;min-height:6px;background:{% if (wk.class_avg or 0) >= 60 %}rgba(212,175,55,.7){% elif (wk.class_avg or 0) >= 45 %}rgba(251,191,36,.5){% else %}rgba(239,68,68,.5){% endif %}"></span>
+                {% set pct = ((wk.smoothed_avg or 0) / max_avg * 100)|int %}
+                <span title="W{{ loop.index }}: raw {{ wk.raw_avg }}% / smoothed {{ wk.smoothed_avg }}%"
+                      style="height:{{ pct }}%;min-height:6px;background:{% if (wk.smoothed_avg or 0) >= 60 %}rgba(212,175,55,.75){% elif (wk.smoothed_avg or 0) >= 45 %}rgba(251,191,36,.55){% else %}rgba(239,68,68,.55){% endif %}"></span>
             {% endfor %}
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:.5rem">
@@ -92,8 +92,12 @@
             {% endfor %}
             </div>
             <p style="margin-top:1rem;font-size:.85rem;color:rgba(255,255,255,.6)">
-                Latest: <strong style="color:#d4af37">{{ intel.performance_trend[-1].class_avg }}%</strong>
-                &nbsp;·&nbsp; {{ intel.performance_trend|length }} weeks tracked
+                Latest: <strong style="color:#d4af37">{{ intel.performance_trend[-1].smoothed_avg }}%</strong>
+                &nbsp;·&nbsp;
+                {% if intel.class_slope > 0.5 %}<span style="color:#6ee7b7">▲ improving</span>
+                {% elif intel.class_slope < -0.5 %}<span style="color:#f87171">▼ declining</span>
+                {% else %}<span style="color:rgba(255,255,255,.45)">→ stable</span>{% endif %}
+                &nbsp;·&nbsp; {{ intel.performance_trend|length }} weeks
             </p>
         {% else %}
             <p style="color:rgba(255,255,255,.4);text-align:center;padding:2rem 0">No snapshot data yet</p>
@@ -171,6 +175,7 @@
         <div style="max-height:260px;overflow-y:auto;padding-right:.25rem">
         {% for row in intel.subject_heatmap %}
             {% set pct = (row.avg_pct or 0) | float %}
+            {% set slope = (row.slope or 0) | float %}
             {% if pct >= 70 %}{% set colour = '#10b981' %}
             {% elif pct >= 50 %}{% set colour = '#fbbf24' %}
             {% elif pct >= 35 %}{% set colour = '#f97316' %}
@@ -178,7 +183,16 @@
             <div class="heatbar-wrap">
                 <div style="display:flex;justify-content:space-between;font-size:.82rem">
                     <span style="color:rgba(255,255,255,.8)">{{ row.subject }}</span>
-                    <span style="color:{{ colour }};font-weight:700">{{ pct }}%</span>
+                    <span style="display:flex;align-items:center;gap:.35rem">
+                        {%- if slope > 0.5 -%}
+                        <span title="slope +{{ slope }}/assessment" style="color:#6ee7b7;font-size:.75rem">▲</span>
+                        {%- elif slope < -0.5 -%}
+                        <span title="slope {{ slope }}/assessment" style="color:#f87171;font-size:.75rem">▼</span>
+                        {%- else -%}
+                        <span style="color:rgba(255,255,255,.3);font-size:.75rem">→</span>
+                        {%- endif -%}
+                        <span style="color:{{ colour }};font-weight:700">{{ pct }}%</span>
+                    </span>
                 </div>
                 <div class="heatbar-track">
                     <div class="heatbar-fill" style="width:{{ pct }}%;background:{{ colour }}"></div>
@@ -278,6 +292,59 @@
     </div>
     {% endfor %}
     </div>
+</div>
+{% endif %}
+
+{# ─── FEEDBACK LOOP PANEL ──────────────────────────────────────────────────── #}
+{% set fb = intel.feedback %}
+{% if fb.total > 0 %}
+<div class="glass-container mb-4" data-animate>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:.75rem">
+        <div>
+            <h3 style="margin:0;font-size:1.1rem">Intervention <span class="text-gold">Feedback Loops</span></h3>
+            <p style="color:rgba(255,255,255,.45);font-size:.8rem;margin:.3rem 0 0">Outcomes measured 14 days after each intervention</p>
+        </div>
+        <a href="/students" style="color:#22d3ee;font-size:.85rem;text-decoration:none">manage students →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem">
+
+        <div style="text-align:center;padding:1rem;background:rgba(52,211,153,.07);border-radius:12px;border:1px solid rgba(52,211,153,.2)">
+            <div style="font-size:2rem;font-weight:900;color:#6ee7b7">{{ fb.improved }}</div>
+            <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.3rem">Improved</div>
+            <div style="font-size:.7rem;color:#6ee7b7;margin-top:.2rem">▲ measurable gain</div>
+        </div>
+
+        <div style="text-align:center;padding:1rem;background:rgba(147,197,253,.06);border-radius:12px;border:1px solid rgba(147,197,253,.18)">
+            <div style="font-size:2rem;font-weight:900;color:#93c5fd">{{ fb.no_change }}</div>
+            <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.3rem">No Change</div>
+            <div style="font-size:.7rem;color:#93c5fd;margin-top:.2rem">→ stable</div>
+        </div>
+
+        <div style="text-align:center;padding:1rem;background:rgba(239,68,68,.07);border-radius:12px;border:1px solid rgba(239,68,68,.2)">
+            <div style="font-size:2rem;font-weight:900;color:#f87171">{{ fb.declined }}</div>
+            <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.3rem">Declined</div>
+            <div style="font-size:.7rem;color:#f87171;margin-top:.2rem">▼ needs follow-up</div>
+        </div>
+
+        <div style="text-align:center;padding:1rem;background:rgba(251,191,36,.06);border-radius:12px;border:1px solid rgba(251,191,36,.18)">
+            <div style="font-size:2rem;font-weight:900;color:#fde68a">{{ fb.pending }}</div>
+            <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.3rem">Pending</div>
+            <div style="font-size:.7rem;color:#fde68a;margin-top:.2rem">⏳ &lt;14 days</div>
+        </div>
+
+    </div>
+    {% if fb.improved + fb.no_change + fb.declined > 0 %}
+    {% set evaluated = fb.improved + fb.no_change + fb.declined %}
+    {% set success_rate = ((fb.improved / evaluated) * 100)|round(0)|int %}
+    <div style="margin-top:1rem;display:flex;align-items:center;gap:.75rem">
+        <div style="flex:1;background:rgba(255,255,255,.06);border-radius:999px;height:8px;overflow:hidden">
+            <div style="width:{{ success_rate }}%;height:100%;background:linear-gradient(90deg,#10b981,#6ee7b7);border-radius:999px;transition:width .5s"></div>
+        </div>
+        <span style="font-size:.82rem;color:rgba(255,255,255,.6);white-space:nowrap">
+            <strong style="color:#6ee7b7">{{ success_rate }}%</strong> intervention success rate
+        </span>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
