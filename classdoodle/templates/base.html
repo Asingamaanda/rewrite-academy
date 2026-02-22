@@ -843,6 +843,7 @@
         <a href="/payments">💳 Payments</a>
         <a href="/admin/applications">📝 Applications</a>
         <a href="/admin/risk-alerts">⚠️ Risk &amp; Alerts</a>
+        <a href="/onboarding">🚀 Getting Started</a>
         <a href="/logout" style="color:#fca5a5;">⏻ Sign Out</a>
     </div>
 
@@ -896,6 +897,11 @@
             <a href="/portal" class="sidebar-link {% if request.path == '/portal' %}active{% endif %}">
                 <span class="sidebar-icon">↗</span><span>Portal View</span>
             </a>
+
+            <div class="sidebar-section"><div class="sidebar-section-label">Help</div></div>
+            <a href="/onboarding" class="sidebar-link {% if '/onboarding' in request.path %}active{% endif %}">
+                <span class="sidebar-icon">🚀</span><span>Getting Started</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -924,6 +930,7 @@
                 <li><a href="/my-portal/subjects"  class="nav-link {% if '/subjects'  in request.path %}active{% endif %}">Subjects</a></li>
                 <li><a href="/my-portal/timetable" class="nav-link {% if '/timetable' in request.path %}active{% endif %}">Timetable</a></li>
                 <li><a href="/my-portal/progress"  class="nav-link {% if '/progress'  in request.path %}active{% endif %}">Progress</a></li>
+                <li><a href="/onboarding"            class="nav-link {% if '/onboarding' in request.path %}active{% endif %}">Help</a></li>
             </ul>
             <div style="display:flex;align-items:center;gap:10px;">
                 <span style="color:var(--text-muted);font-size:0.82rem;">{{ session.get('username','') }}</span>

@@ -176,6 +176,14 @@ def health():
     return 'OK', 200
 
 
+# ==================== ONBOARDING ====================
+
+@app.route('/onboarding')
+def onboarding():
+    """Getting-started guide for admins and students."""
+    return render_template('onboarding.html')
+
+
 # ==================== PUBLIC LANDING PAGE ====================
 
 @app.route('/')
