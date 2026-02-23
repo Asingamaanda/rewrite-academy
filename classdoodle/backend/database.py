@@ -423,6 +423,21 @@ class ClassDoodleDB:
                 """, ('ASI001',day,period,subject,t_from,t_to))
             conn.commit()
 
+        # Seed CD007 — Yonela Gwarubana
+        row = fetchone(conn, f"SELECT id FROM students WHERE student_id={PH}", ('CD007',))
+        if not row:
+            cur.execute(f"""
+                INSERT INTO students (student_id, name, email, registration_date, status)
+                VALUES ({PH},{PH},{PH},{PH},{PH})
+            """, ('CD007','Yonela Gwarubana','yonela.gwarubana@student.classdoodle.ac.za', today,'active'))
+            for subj in ('Math Lit', 'Accounting'):
+                cur.execute(f"INSERT INTO student_subjects (student_id,subject) VALUES ({PH},{PH})",
+                            ('CD007', subj))
+            cur.execute(
+                f"INSERT INTO user_accounts (username,password_hash,role,student_id) VALUES ({PH},{PH},{PH},{PH})",
+                ('CD007', generate_password_hash('student123'), 'student', 'CD007'))
+            conn.commit()
+
         # Seed Mathematics notes (Grade 12 for Dummies, Lessons 1-8)
         _math_lessons = [
             (1, 'Lesson 1: Recognise Before You Solve',
