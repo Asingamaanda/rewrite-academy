@@ -25,6 +25,7 @@ CORE_SUBJECTS = {
     "Hospitality Studies":   {"periods_per_week": 3, "color": "#E84393"},
     "Technical Mathematics": {"periods_per_week": 5, "color": "#F0932B"},
     "Technical Sciences":    {"periods_per_week": 5, "color": "#686DE0"},
+    "Accounting":            {"periods_per_week": 4, "color": "#00B894"},
     "Afrikaans":             {"periods_per_week": 3, "color": "#FD79A8"},
     "Zulu":                  {"periods_per_week": 3, "color": "#BADC58"},
     "Xhosa":                 {"periods_per_week": 3, "color": "#E17055"},
