@@ -17,7 +17,148 @@
         </div>
     </div>
 
+    {# ===== SMART GENERATOR PANEL ===== #}
+    <div class="glass-container" data-animate style="margin-bottom:2rem;border:1px solid rgba(212,175,55,0.25);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;">
+            <span style="font-size:1.4rem;">✨</span>
+            <div>
+                <h2 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin:0;">Smart Timetable Generator</h2>
+                <p style="color:rgba(255,255,255,0.45);font-size:0.82rem;margin:2px 0 0;">Set how many periods per week each subject meets — the algorithm spreads them evenly with no back-to-back repeats.</p>
+            </div>
+        </div>
+
+        <form method="POST" action="/admin/timetable/{{ student.student_id }}/generate-smart">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1.2rem;">
+                {% for subj in student.subjects %}
+                {% set safe_key = subj.replace(' ', '_') %}
+                {% set def_freq = default_freqs.get(subj, 4) %}
+                <label style="display:flex;flex-direction:column;gap:4px;">
+                    <span style="font-size:0.82rem;color:rgba(255,255,255,0.7);">{{ subj }}</span>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <input type="number"
+                               name="freq_{{ safe_key }}"
+                               value="{{ def_freq }}"
+                               min="0" max="10"
+                               style="width:60px;padding:6px 8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.9rem;text-align:center;">
+                        <span style="font-size:0.78rem;color:rgba(255,255,255,0.35);">× / week</span>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <button type="submit" class="btn-cinematic btn-gold"
+                        onclick="return confirm('This will replace the current timetable with a freshly generated one. Continue?')">
+                    ✨ Generate Smart Timetable
+                </button>
+                <span style="font-size:0.8rem;color:rgba(255,255,255,0.3);">Replaces any existing slots.</span>
+            </div>
+        </form>
+    </div>
+
+    {# ===== MANUAL ENTRY PANEL ===== #}
     <div class="glass-container" data-animate>
+        <p style="color:rgba(255,255,255,0.5);font-size:0.88rem;margin-bottom:1.5rem;">Add the student's timetable slots below. Each row is one period.</p>
+
+        <form method="POST">
+            <div id="slotsContainer">
+                {% if slots %}
+                    {% for slot in slots %}
+                    <div class="slot-row" style="display:grid;grid-template-columns:120px 60px minmax(140px,1fr) 90px 90px 100px 100px 36px;gap:8px;margin-bottom:8px;align-items:center;">
+                        <select name="day" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                            {% for d in days %}
+                            <option value="{{ d }}" {% if d == slot.day %}selected{% endif %}>{{ d }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" name="period" value="{{ slot.period }}" min="1" max="10" placeholder="#"
+                               style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;text-align:center;">
+                        <select name="subject" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                            <option value="">— Subject —</option>
+                            {% for s in subjects %}
+                            <option value="{{ s }}" {% if s == slot.subject %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="time" name="time_from" value="{{ slot.time_from }}"
+                               style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <input type="time" name="time_to" value="{{ slot.time_to }}"
+                               style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <input type="text" name="room" value="{{ slot.room }}" placeholder="Room"
+                               style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <input type="text" name="teacher" value="{{ slot.teacher }}" placeholder="Teacher"
+                               style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <button type="button" onclick="removeRow(this)" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;border-radius:6px;width:36px;height:36px;cursor:pointer;font-size:1rem;">✕</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <!-- Empty starter row -->
+                <div class="slot-row" style="display:grid;grid-template-columns:120px 60px minmax(140px,1fr) 90px 90px 100px 100px 36px;gap:8px;margin-bottom:8px;align-items:center;">
+                    <select name="day" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        {% for d in days %}<option value="{{ d }}">{{ d }}</option>{% endfor %}
+                    </select>
+                    <input type="number" name="period" value="1" min="1" max="10" placeholder="#"
+                           style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;text-align:center;">
+                    <select name="subject" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                        <option value="">— Subject —</option>
+                        {% for s in subjects %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                    </select>
+                    <input type="time" name="time_from" value="08:00" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                    <input type="time" name="time_to" value="09:00" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                    <input type="text" name="room" placeholder="Room" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                    <input type="text" name="teacher" placeholder="Teacher" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">
+                    <button type="button" onclick="removeRow(this)" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;border-radius:6px;width:36px;height:36px;cursor:pointer;font-size:1rem;">✕</button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Column headers -->
+            <div style="display:grid;grid-template-columns:120px 60px minmax(140px,1fr) 90px 90px 100px 100px 36px;gap:8px;margin-bottom:6px;order:-1;color:rgba(255,255,255,0.4);font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;">
+                <span>Day</span><span style="text-align:center;">Period</span><span>Subject</span><span>From</span><span>To</span><span>Room</span><span>Teacher</span><span></span>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:1.5rem;flex-wrap:wrap;">
+                <button type="button" onclick="addRow()" class="btn-cinematic btn-outline">+ Add Row</button>
+                <button type="submit" class="btn-cinematic btn-gold">Save Timetable</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const days = {{ days | tojson }};
+const subjects = {{ subjects | tojson }};
+
+function buildRow() {
+    const dayOpts = days.map(d => `<option value="${d}">${d}</option>`).join('');
+    const subjectOpts = Object.keys(subjects).map(s => `<option value="${s}">${s}</option>`).join('');
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+    row.style.cssText = 'display:grid;grid-template-columns:120px 60px minmax(140px,1fr) 90px 90px 100px 100px 36px;gap:8px;margin-bottom:8px;align-items:center;';
+    const inp = (name, type, extra='', val='', placeholder='') =>
+        `<input type="${type}" name="${name}" value="${val}" placeholder="${placeholder}" ${extra} style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">`;
+    const sel = (name, opts) =>
+        `<select name="${name}" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;">${opts}</select>`;
+    row.innerHTML = `
+        ${sel('day', dayOpts)}
+        <input type="number" name="period" value="1" min="1" max="10" style="padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:0.85rem;text-align:center;">
+        ${sel('subject', '<option value="">— Subject —</option>' + subjectOpts)}
+        ${inp('time_from', 'time', '', '08:00')}
+        ${inp('time_to', 'time', '', '09:00')}
+        ${inp('room', 'text', '', '', 'Room')}
+        ${inp('teacher', 'text', '', '', 'Teacher')}
+        <button type="button" onclick="removeRow(this)" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;border-radius:6px;width:36px;height:36px;cursor:pointer;font-size:1rem;">✕</button>
+    `;
+    return row;
+}
+
+function addRow() {
+    document.getElementById('slotsContainer').appendChild(buildRow());
+}
+
+function removeRow(btn) {
+    const rows = document.querySelectorAll('.slot-row');
+    if (rows.length > 1) btn.closest('.slot-row').remove();
+}
+</script>
+{% endblock %}
         <p style="color:rgba(255,255,255,0.5);font-size:0.88rem;margin-bottom:1.5rem;">Add the student's timetable slots below. Each row is one period.</p>
 
         <form method="POST">

@@ -15,7 +15,9 @@ from backend.db_adapter import get_connection, release_connection, qexec, PH
 from backend.api import ClassDoodleAPI
 from backend import automation, intelligence
 from backend.mailer import send_application_email, send_whatsapp_notification
-from timetable_generator import generate_daily_timetable, WEEKLY_SCHEDULE, CORE_SUBJECTS
+from timetable_generator import (generate_daily_timetable, WEEKLY_SCHEDULE,
+                                 CORE_SUBJECTS, generate_smart_timetable,
+                                 SUBJECT_DEFAULT_FREQS, PERIOD_TIMES, DAYS as TT_DAYS)
 
 app = Flask(__name__)
 _secret = os.environ.get('SECRET_KEY')
@@ -915,7 +917,54 @@ def admin_student_timetable(student_id):
 
     return render_template('admin/student_timetable.html',
                          student=student, timetable_grid=timetable_grid,
-                         days=DAYS, subjects=CORE_SUBJECTS, slots=[dict(s) for s in slots])
+                         days=DAYS, subjects=CORE_SUBJECTS, slots=[dict(s) for s in slots],
+                         default_freqs=SUBJECT_DEFAULT_FREQS)
+
+
+@app.route('/admin/timetable/<student_id>/generate-smart', methods=['POST'])
+@admin_required
+def generate_smart_timetable_route(student_id):
+    """Generate an intelligent timetable from per-subject frequency inputs."""
+    student = api.get_student_info(student_id)
+    if not student:
+        flash(f'Student {student_id} not found.', 'error')
+        return redirect(url_for('students'))
+
+    # Build subjects_freq from form: enrolled subjects + any extra checked ones
+    enrolled = student.get('subjects', [])
+    subjects_freq = {}
+    for subj in enrolled:
+        key = f"freq_{subj.replace(' ', '_')}"
+        raw = request.form.get(key, '').strip()
+        freq = int(raw) if raw.isdigit() else SUBJECT_DEFAULT_FREQS.get(subj, 4)
+        if freq > 0:
+            subjects_freq[subj] = freq
+
+    if not subjects_freq:
+        flash('No subjects selected for generation.', 'warning')
+        return redirect(url_for('admin_student_timetable', student_id=student_id))
+
+    schedule = generate_smart_timetable(subjects_freq)
+
+    conn = get_db()
+    qexec(conn, f"DELETE FROM timetable_slots WHERE student_id={PH}", (student_id,))
+    for day, periods in schedule.items():
+        for (period, subject, time_from, time_to) in periods:
+            qexec(conn,
+                f"INSERT INTO timetable_slots (student_id, day, period, subject, time_from, time_to)"
+                f" VALUES ({PH},{PH},{PH},{PH},{PH},{PH})",
+                (student_id, day, period, subject, time_from, time_to))
+    # Insert daily tea break rows so they show on the student view
+    for day in TT_DAYS:
+        qexec(conn,
+            f"INSERT INTO timetable_slots (student_id, day, period, subject, time_from, time_to)"
+            f" VALUES ({PH},{PH},{PH},{PH},{PH},{PH})",
+            (student_id, day, 0, 'TEA BREAK', '08:40', '09:00'))
+    conn.commit()
+    release_connection(conn)
+    total = sum(len(v) for v in schedule.values())
+    flash(f"Smart timetable generated for {student['name']} ({total} slots across 5 days).", 'success')
+    return redirect(url_for('admin_student_timetable', student_id=student_id))
 
 
 # ==================== ADMIN: STUDENT PORTAL SELECTOR ====================
