@@ -391,7 +391,8 @@ def run_smoke() -> None:
         artifacts.assessment_type = f"SMOKE_ASSESSMENT_{token}"
         log("Recording assessment from /assessments.")
         driver.get(f"{BASE_URL}/assessments")
-        assessment_form = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "form[action='/assessment/add']")))
+        wait.until(EC.url_contains("/assessments"))
+        assessment_form = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "form[action*='assessment/add']")))
         robust_type(driver, assessment_form.find_element(By.NAME, "student_id"), artifacts.student_id)
         Select(assessment_form.find_element(By.NAME, "subject")).select_by_visible_text("Mathematics")
         assess_type_sel = assessment_form.find_element(By.NAME, "assessment_type")

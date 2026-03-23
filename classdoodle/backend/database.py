@@ -5,6 +5,7 @@ Connection management is handled by backend.db_adapter.
 """
 
 from datetime import datetime, date
+import os
 from backend.db_adapter import (
     get_connection, release_connection, qexec, fetchone, fetchall,
     _make_cursor, PH, SERIAL_PK, POSTGRES
@@ -51,6 +52,8 @@ class ClassDoodleDB:
                 attendance_risk TEXT DEFAULT 'ok',
                 payment_risk    TEXT DEFAULT 'pending',
                 notes           TEXT,
+                school_name     TEXT DEFAULT '',
+                grade_level     TEXT DEFAULT '',
                 created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -154,7 +157,9 @@ class ClassDoodleDB:
                 subjects        TEXT NOT NULL,
                 previous_school TEXT DEFAULT '',
                 year_failed     TEXT DEFAULT '',
+                grade_level     TEXT DEFAULT '',
                 message         TEXT DEFAULT '',
+                school_name     TEXT DEFAULT '',
                 status          TEXT DEFAULT 'new',
                 created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -173,6 +178,7 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS manlib_videos (
                 id            {SERIAL_PK},
+                school_name   TEXT DEFAULT '',
                 subject       TEXT NOT NULL,
                 title         TEXT NOT NULL,
                 description   TEXT,
@@ -203,6 +209,7 @@ class ClassDoodleDB:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS subject_content (
                 id           {SERIAL_PK},
+                school_name  TEXT DEFAULT '',
                 subject      TEXT NOT NULL,
                 content_type TEXT NOT NULL CHECK(content_type IN ('notes','question_paper','critical_work','exam_prep')),
                 title        TEXT NOT NULL,
@@ -272,6 +279,8 @@ class ClassDoodleDB:
             "CREATE INDEX IF NOT EXISTS idx_students_attendance_risk ON students(attendance_risk)",
             "CREATE INDEX IF NOT EXISTS idx_students_payment_risk   ON students(payment_risk)",
             "CREATE INDEX IF NOT EXISTS idx_students_status         ON students(status)",
+            "CREATE INDEX IF NOT EXISTS idx_students_school_name    ON students(school_name)",
+            "CREATE INDEX IF NOT EXISTS idx_students_grade_level    ON students(grade_level)",
             # student_subjects — join / filter by student and subject
             "CREATE INDEX IF NOT EXISTS idx_ss_student_id           ON student_subjects(student_id)",
             "CREATE INDEX IF NOT EXISTS idx_ss_subject              ON student_subjects(subject)",
@@ -294,8 +303,12 @@ class ClassDoodleDB:
             "CREATE INDEX IF NOT EXISTS idx_alerts_resolved         ON automation_alerts(resolved)",
             # timetable
             "CREATE INDEX IF NOT EXISTS idx_tt_student_id           ON timetable_slots(student_id)",
+            "CREATE INDEX IF NOT EXISTS idx_tt_student_day_period   ON timetable_slots(student_id, day, period)",
             # user accounts
             "CREATE INDEX IF NOT EXISTS idx_users_student_id        ON user_accounts(student_id)",
+            # scoped learning content
+            "CREATE INDEX IF NOT EXISTS idx_manlib_school_subject   ON manlib_videos(school_name, subject)",
+            "CREATE INDEX IF NOT EXISTS idx_content_school_subject_type ON subject_content(school_name, subject, content_type)",
             # intervention log
             "CREATE INDEX IF NOT EXISTS idx_intv_student_id         ON intervention_log(student_id)",
             "CREATE INDEX IF NOT EXISTS idx_intv_outcome            ON intervention_log(outcome)",
@@ -314,8 +327,14 @@ class ClassDoodleDB:
                 "ALTER TABLE students ADD COLUMN IF NOT EXISTS academic_risk TEXT DEFAULT 'on_track'",
                 "ALTER TABLE students ADD COLUMN IF NOT EXISTS attendance_risk TEXT DEFAULT 'ok'",
                 "ALTER TABLE students ADD COLUMN IF NOT EXISTS payment_risk TEXT DEFAULT 'pending'",
+                "ALTER TABLE students ADD COLUMN IF NOT EXISTS school_name TEXT DEFAULT ''",
+                "ALTER TABLE students ADD COLUMN IF NOT EXISTS grade_level TEXT DEFAULT ''",
                 "ALTER TABLE assessments ADD COLUMN IF NOT EXISTS weight REAL DEFAULT 1",
                 "ALTER TABLE payments ADD COLUMN IF NOT EXISTS due_date DATE",
+                "ALTER TABLE applications ADD COLUMN IF NOT EXISTS school_name TEXT DEFAULT ''",
+                "ALTER TABLE applications ADD COLUMN IF NOT EXISTS grade_level TEXT DEFAULT ''",
+                "ALTER TABLE manlib_videos ADD COLUMN IF NOT EXISTS school_name TEXT DEFAULT ''",
+                "ALTER TABLE subject_content ADD COLUMN IF NOT EXISTS school_name TEXT DEFAULT ''",
             ]:
                 try: cur.execute(sql)
                 except Exception: pass
@@ -370,36 +389,73 @@ class ClassDoodleDB:
                 "ALTER TABLE students ADD COLUMN academic_risk TEXT DEFAULT 'on_track'",
                 "ALTER TABLE students ADD COLUMN attendance_risk TEXT DEFAULT 'ok'",
                 "ALTER TABLE students ADD COLUMN payment_risk TEXT DEFAULT 'pending'",
+                "ALTER TABLE students ADD COLUMN school_name TEXT DEFAULT ''",
+                "ALTER TABLE students ADD COLUMN grade_level TEXT DEFAULT ''",
                 "ALTER TABLE assessments ADD COLUMN weight REAL DEFAULT 1",
                 "ALTER TABLE payments ADD COLUMN due_date DATE",
+                "ALTER TABLE applications ADD COLUMN school_name TEXT DEFAULT ''",
+                "ALTER TABLE applications ADD COLUMN grade_level TEXT DEFAULT ''",
+                "ALTER TABLE manlib_videos ADD COLUMN school_name TEXT DEFAULT ''",
+                "ALTER TABLE subject_content ADD COLUMN school_name TEXT DEFAULT ''",
             ]:
                 try: cur.execute(sql); conn.commit()
                 except Exception: pass
+
+        default_school = (os.environ.get('SCHOOL_SCOPE') or os.environ.get('BRAND_NAME') or '').strip()
+        if default_school:
+            try:
+                cur.execute(
+                    f"UPDATE manlib_videos SET school_name={PH} WHERE COALESCE(school_name, '')=''",
+                    (default_school,),
+                )
+            except Exception:
+                pass
+            try:
+                cur.execute(
+                    f"UPDATE subject_content SET school_name={PH} WHERE COALESCE(school_name, '')=''",
+                    (default_school,),
+                )
+            except Exception:
+                pass
+
+        for scoped_idx_sql in [
+            "CREATE INDEX IF NOT EXISTS idx_manlib_school_subject ON manlib_videos(school_name, subject)",
+            "CREATE INDEX IF NOT EXISTS idx_content_school_subject_type ON subject_content(school_name, subject, content_type)",
+        ]:
+            try:
+                cur.execute(scoped_idx_sql)
+            except Exception:
+                pass
 
         conn.commit()
 
         # Seed admin
         from werkzeug.security import generate_password_hash
+        admin_bootstrap_password = os.environ.get('ADMIN_BOOTSTRAP_PASSWORD', '').strip()
+        student_bootstrap_password = os.environ.get('STUDENT_BOOTSTRAP_PASSWORD', '').strip()
         row = fetchone(conn, f"SELECT id FROM user_accounts WHERE username={PH}", ('admin',))
-        if not row:
+        if not row and admin_bootstrap_password:
             cur.execute(
                 f"INSERT INTO user_accounts (username, password_hash, role) VALUES ({PH},{PH},{PH})",
-                ('admin', generate_password_hash('Classdoodle@password'), 'admin'))
+                ('admin', generate_password_hash(admin_bootstrap_password), 'admin'))
             conn.commit()
+        elif not row:
+            print("WARNING: Admin account not seeded. Set ADMIN_BOOTSTRAP_PASSWORD to create it automatically.")
 
         # Seed ASI001
         row = fetchone(conn, f"SELECT id FROM students WHERE student_id={PH}", ('ASI001',))
         if not row:
             cur.execute(f"""
-                INSERT INTO students (student_id, name, email, registration_date, status)
-                VALUES ({PH},{PH},{PH},{PH},{PH})
-            """, ('ASI001','Asingamaanda Nefefe','asi001@rewriteacademy.local', today,'active'))
+                INSERT INTO students (student_id, name, email, registration_date, status, school_name)
+                VALUES ({PH},{PH},{PH},{PH},{PH},{PH})
+            """, ('ASI001','Asingamaanda Nefefe','asi001@rewriteacademy.local', today,'active','Rewrite Academy'))
             for subj in ('Mathematics','Life Sciences','Geography'):
                 cur.execute(f"INSERT INTO student_subjects (student_id,subject) VALUES ({PH},{PH})",
                             ('ASI001', subj))
-            cur.execute(
-                f"INSERT INTO user_accounts (username,password_hash,role,student_id) VALUES ({PH},{PH},{PH},{PH})",
-                ('ASI001', generate_password_hash('student123'), 'student', 'ASI001'))
+            if student_bootstrap_password:
+                cur.execute(
+                    f"INSERT INTO user_accounts (username,password_hash,role,student_id) VALUES ({PH},{PH},{PH},{PH})",
+                    ('ASI001', generate_password_hash(student_bootstrap_password), 'student', 'ASI001'))
             for day,period,subject,t_from,t_to in [
                 ('Monday',1,'Mathematics','07:00','07:50'),('Monday',2,'Life Sciences','07:50','08:40'),
                 ('Monday',3,'Geography','09:00','09:50'),('Monday',4,'Mathematics','09:50','10:40'),
@@ -427,15 +483,16 @@ class ClassDoodleDB:
         row = fetchone(conn, f"SELECT id FROM students WHERE student_id={PH}", ('CD007',))
         if not row:
             cur.execute(f"""
-                INSERT INTO students (student_id, name, email, registration_date, status)
-                VALUES ({PH},{PH},{PH},{PH},{PH})
-            """, ('CD007','Yonela Gwarubana','yonela.gwarubana@student.classdoodle.ac.za', today,'active'))
+                INSERT INTO students (student_id, name, email, registration_date, status, school_name)
+                VALUES ({PH},{PH},{PH},{PH},{PH},{PH})
+            """, ('CD007','Yonela Gwarubana','yonela.gwarubana@student.classdoodle.ac.za', today,'active','Rewrite Academy'))
             for subj in ('Math Lit', 'Accounting'):
                 cur.execute(f"INSERT INTO student_subjects (student_id,subject) VALUES ({PH},{PH})",
                             ('CD007', subj))
-            cur.execute(
-                f"INSERT INTO user_accounts (username,password_hash,role,student_id) VALUES ({PH},{PH},{PH},{PH})",
-                ('CD007', generate_password_hash('student123'), 'student', 'CD007'))
+            if student_bootstrap_password:
+                cur.execute(
+                    f"INSERT INTO user_accounts (username,password_hash,role,student_id) VALUES ({PH},{PH},{PH},{PH})",
+                    ('CD007', generate_password_hash(student_bootstrap_password), 'student', 'CD007'))
             conn.commit()
 
         # Seed Mathematics notes (Grade 12 for Dummies, Lessons 1-8)
@@ -474,8 +531,13 @@ class ClassDoodleDB:
              'Exam strategy | Problem classification | Decision flow | Error detection | Mixed algebra'),
         ]
         _tex_path = 'uploads/subject_content/Mathematics/notes/grade12_mathematics_for_dummies.tex'
-        cur.execute(f"INSERT OR IGNORE INTO subjects (name,teacher,weight) VALUES ({PH},{PH},{PH})",
-                    ('Mathematics', '', 1.0))
+        if POSTGRES:
+            cur.execute(
+                f"INSERT INTO subjects (name,teacher,weight) VALUES ({PH},{PH},{PH}) ON CONFLICT(name) DO NOTHING",
+                ('Mathematics', '', 1.0))
+        else:
+            cur.execute(f"INSERT OR IGNORE INTO subjects (name,teacher,weight) VALUES ({PH},{PH},{PH})",
+                        ('Mathematics', '', 1.0))
         # Only seed if no Mathematics notes exist yet
         _existing = fetchone(conn,
             f"SELECT id FROM subject_content WHERE subject={PH} AND content_type='notes' LIMIT 1",
@@ -513,22 +575,39 @@ class StudentManager:
         self.db = db
 
     def add_student(self, name, email, phone=None, parent_name=None,
-                    parent_phone=None, parent_email=None, subjects=None, notes=None):
+                    parent_phone=None, parent_email=None, subjects=None, notes=None,
+                    school_name=None, grade_level=None):
         student_id        = self.db.get_next_student_id()
         registration_date = date.today().isoformat()
+        default_school = (os.environ.get('SCHOOL_SCOPE') or os.environ.get('BRAND_NAME') or '').strip()
+        default_grade = os.environ.get('DEFAULT_GRADE_LEVEL', '').strip()
+        school_name = (school_name or default_school).strip()
+        grade_level = (grade_level or default_grade).strip()
         try:
             self.db.execute_query(f"""
                 INSERT INTO students
                   (student_id, name, email, phone, parent_name, parent_phone,
-                   parent_email, registration_date, notes)
-                VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})
+                   parent_email, registration_date, notes, school_name, grade_level)
+                VALUES ({PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH},{PH})
             """, (student_id, name, email, phone, parent_name, parent_phone,
-                  parent_email, registration_date, notes))
+                  parent_email, registration_date, notes, school_name, grade_level))
             if subjects:
+                seen_subjects = set()
                 for subject in subjects:
+                    normalized = (subject or '').strip()
+                    if not normalized or normalized in seen_subjects:
+                        continue
+                    seen_subjects.add(normalized)
+                    if POSTGRES:
+                        subject_sql = (
+                            f"INSERT INTO student_subjects (student_id,subject) "
+                            f"VALUES ({PH},{PH}) ON CONFLICT(student_id,subject) DO NOTHING"
+                        )
+                    else:
+                        subject_sql = f"INSERT OR IGNORE INTO student_subjects (student_id,subject) VALUES ({PH},{PH})"
                     self.db.execute_query(
-                        f"INSERT INTO student_subjects (student_id,subject) VALUES ({PH},{PH})",
-                        (student_id, subject.strip()))
+                        subject_sql,
+                        (student_id, normalized))
             return student_id
         except Exception as e:
             print(f"Error adding student: {e}")
@@ -544,24 +623,40 @@ class StudentManager:
             return dict(student), [r['subject'] for r in subj_result.fetchall()]
         return None, None
 
-    def get_all_students(self, status='active'):
+    def get_all_students(self, status='active', school_name=None, grade_level=None):
+        query, params = "SELECT * FROM students WHERE 1=1", []
         if status:
-            result = self.db.execute_query(
-                f"SELECT * FROM students WHERE status = {PH} ORDER BY name", (status,))
-        else:
-            result = self.db.execute_query("SELECT * FROM students ORDER BY name")
-        students = []
-        for row in result.fetchall():
-            student = dict(row)
-            subj_result = self.db.execute_query(
-                f"SELECT subject FROM student_subjects WHERE student_id = {PH}",
-                (student['student_id'],))
-            student['subjects'] = [r['subject'] for r in subj_result.fetchall()]
-            students.append(student)
+            query += f" AND status = {PH}"
+            params.append(status)
+        if school_name:
+            query += f" AND LOWER(COALESCE(school_name, '')) = LOWER({PH})"
+            params.append(school_name)
+        if grade_level:
+            query += f" AND LOWER(COALESCE(grade_level, '')) = LOWER({PH})"
+            params.append(grade_level)
+        query += " ORDER BY name"
+        result = self.db.execute_query(query, tuple(params) if params else None)
+        students = [dict(row) for row in result.fetchall()]
+        if not students:
+            return students
+
+        student_ids = [student['student_id'] for student in students]
+        placeholders = ",".join([PH] * len(student_ids))
+        subj_rows = self.db.execute_query(
+            f"SELECT student_id, subject FROM student_subjects WHERE student_id IN ({placeholders})",
+            tuple(student_ids)
+        ).fetchall()
+
+        subjects_by_student = {student_id: [] for student_id in student_ids}
+        for row in subj_rows:
+            subjects_by_student.setdefault(row['student_id'], []).append(row['subject'])
+
+        for student in students:
+            student['subjects'] = subjects_by_student.get(student['student_id'], [])
         return students
 
     def update_student(self, student_id, **kwargs):
-        allowed = ['name','email','phone','parent_name','parent_phone','parent_email','status','notes']
+        allowed = ['name','email','phone','parent_name','parent_phone','parent_email','status','notes','grade_level']
         updates, values = [], []
         for field, value in kwargs.items():
             if field in allowed and value is not None:
@@ -581,7 +676,9 @@ class StudentManager:
                     name=student['name'], email=student['email'],
                     phone=student.get('phone'), parent_name=student.get('parent_name'),
                     parent_phone=student.get('parent_phone'), parent_email=student.get('parent_email'),
-                    subjects=student.get('subjects', []), notes=student.get('notes'))
+                    subjects=student.get('subjects', []), notes=student.get('notes'),
+                    school_name=student.get('school_name'),
+                    grade_level=student.get('grade_level'))
                 (imported if sid else failed).append(sid or student['email'])
             except Exception as e:
                 failed.append(f"{student['email']}: {e}")
@@ -602,12 +699,19 @@ class AttendanceManager:
             sql = f"""INSERT OR REPLACE INTO attendance (student_id,date,time_slot,subject,status)
                       VALUES ({PH},{PH},{PH},{PH},{PH})"""
         marked = 0
-        for sid in student_ids:
-            try:
-                self.db.execute_query(sql, (sid, date_str, time_slot, subject, status))
-                marked += 1
-            except Exception as e:
-                print(f"Attendance error for {sid}: {e}")
+        if not student_ids:
+            return marked
+        conn = get_connection()
+        try:
+            for sid in student_ids:
+                try:
+                    qexec(conn, sql, (sid, date_str, time_slot, subject, status))
+                    marked += 1
+                except Exception as e:
+                    print(f"Attendance error for {sid}: {e}")
+            conn.commit()
+        finally:
+            release_connection(conn)
         return marked
 
     def get_attendance(self, date_str=None, student_id=None, subject=None):
@@ -682,24 +786,41 @@ class PaymentManager:
         """, (student_id, amount, payment_date, month_for, payment_method, reference, notes))
         return True
 
-    def get_payments(self, student_id=None, month_for=None, status=None):
-        query, params = "SELECT * FROM payments WHERE 1=1", []
-        if student_id: query += f" AND student_id={PH}"; params.append(student_id)
-        if month_for:  query += f" AND month_for={PH}";  params.append(month_for)
-        if status:     query += f" AND status={PH}";     params.append(status)
+    def get_payments(self, student_id=None, month_for=None, status=None, school_name=None):
+        query, params = "SELECT p.* FROM payments p", []
+        if school_name:
+            query += " JOIN students s ON s.student_id = p.student_id"
+        query += " WHERE 1=1"
+        if student_id: query += f" AND p.student_id={PH}"; params.append(student_id)
+        if month_for:  query += f" AND p.month_for={PH}";  params.append(month_for)
+        if status:     query += f" AND p.status={PH}";     params.append(status)
+        if school_name:
+            query += f" AND LOWER(COALESCE(s.school_name, ''))=LOWER({PH})"
+            params.append(school_name)
         query += " ORDER BY payment_date DESC"
         return self.db.execute_query(query, tuple(params) if params else None).fetchall()
 
-    def get_outstanding_payments(self, month_for):
-        return self.db.execute_query(f"""
+    def get_outstanding_payments(self, month_for, school_name=None):
+        query = f"""
             SELECT s.student_id, s.name, s.email, s.parent_phone FROM students s
             WHERE s.status='active' AND s.student_id NOT IN (
                 SELECT student_id FROM payments WHERE month_for={PH} AND status='paid')
-        """, (month_for,)).fetchall()
+        """
+        params = [month_for]
+        if school_name:
+            query += f" AND LOWER(COALESCE(s.school_name, ''))=LOWER({PH})"
+            params.append(school_name)
+        return self.db.execute_query(query, tuple(params)).fetchall()
 
-    def get_revenue_report(self, start_date=None, end_date=None):
-        query  = f"SELECT COUNT(*) as payment_count, SUM(amount) as total_revenue, AVG(amount) as avg_payment FROM payments WHERE status='paid'"
+    def get_revenue_report(self, start_date=None, end_date=None, school_name=None):
+        query  = "SELECT COUNT(*) as payment_count, SUM(p.amount) as total_revenue, AVG(p.amount) as avg_payment FROM payments p"
         params = []
-        if start_date: query += f" AND payment_date>={PH}"; params.append(start_date)
-        if end_date:   query += f" AND payment_date<={PH}"; params.append(end_date)
+        if school_name:
+            query += " JOIN students s ON s.student_id = p.student_id"
+        query += " WHERE p.status='paid'"
+        if start_date: query += f" AND p.payment_date>={PH}"; params.append(start_date)
+        if end_date:   query += f" AND p.payment_date<={PH}"; params.append(end_date)
+        if school_name:
+            query += f" AND LOWER(COALESCE(s.school_name, ''))=LOWER({PH})"
+            params.append(school_name)
         return self.db.execute_query(query, tuple(params) if params else None).fetchone() or {}
