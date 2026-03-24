@@ -1,4 +1,4 @@
-"""
+﻿"""
 ClassDoodle Web Dashboard
 Role-based access: admin (teacher) + student login
 """
@@ -13,6 +13,7 @@ from io import BytesIO
 from urllib.parse import quote_plus
 import os
 import secrets
+import hashlib
 
 from backend.db_adapter import get_connection, release_connection, qexec, PH, managed_connection
 from backend.api import ClassDoodleAPI
@@ -28,10 +29,19 @@ _secret = os.environ.get('SECRET_KEY')
 if not _secret:
     import sys as _sys
     if os.environ.get('RENDER') or os.environ.get('PRODUCTION'):
-        print('FATAL: SECRET_KEY env var is not set. Refusing to start.', file=_sys.stderr)
-        _sys.exit(1)
-    # Local dev only — deterministic fallback, never used in production.
-    _secret = 'classdoodle-dev-only-2026'
+        # Render safety net: keep sessions stable even if SECRET_KEY is not configured yet.
+        # Strongly recommended: set SECRET_KEY explicitly in Render env vars.
+        seed = (
+            os.environ.get('DATABASE_URL')
+            or os.environ.get('RENDER_SERVICE_ID')
+            or os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+            or 'classdoodle-render-fallback'
+        )
+        _secret = hashlib.sha256(seed.encode('utf-8')).hexdigest()
+        print('WARNING: SECRET_KEY env var is not set. Using deterministic fallback.', file=_sys.stderr)
+    else:
+        # Local dev only - deterministic fallback.
+        _secret = 'classdoodle-dev-only-2026'
 app.secret_key = _secret
 app.config['SESSION_COOKIE_SECURE']   = bool(os.environ.get('RENDER'))   # HTTPS-only on Render
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -164,7 +174,7 @@ def _ensure_db():
     try:
         api.db.ensure_initialized()
     except Exception as e:
-        # Still not ready — log and let Flask serve the request.
+        # Still not ready â€” log and let Flask serve the request.
         # Routes that actually need the DB will fail gracefully.
         print(f"DB not ready yet: {e}")
 
@@ -429,7 +439,7 @@ def apply():
     if request.method == 'GET':
         return render_template('apply.html', submitted=False, grade_levels=GRADE_LEVELS)
 
-    # POST — save + email
+    # POST â€” save + email
     full_name      = request.form.get('full_name', '').strip()
     phone          = request.form.get('phone', '').strip()
     email          = request.form.get('email', '').strip()
@@ -461,7 +471,7 @@ def apply():
         flash(f'Database error: {e}', 'error')
         return render_template('apply.html', submitted=False, grade_levels=GRADE_LEVELS)
 
-    # Send email (non-blocking — silently log failure, don't break UX)
+    # Send email (non-blocking â€” silently log failure, don't break UX)
     application_data = dict(
         full_name=full_name, phone=phone, email=email,
         parent_name=parent_name, parent_phone=parent_phone,
@@ -704,7 +714,7 @@ def mark_attendance():
             subject=request.form.get('subject'),
             school_name=school_name
         )
-        # Automation Rule 2 — attendance risk check for every student marked
+        # Automation Rule 2 â€” attendance risk check for every student marked
         all_ids = [sid for sid in (request.form.getlist('all_student_ids[]') or present_ids) if sid in allowed_ids]
         for sid in all_ids:
             try:
@@ -777,7 +787,7 @@ def add_assessment():
             release_connection(conn)
         except Exception:
             pass
-        # Automation Rule 1 — academic risk check
+        # Automation Rule 1 â€” academic risk check
         try:
             automation.run_for_student(student_id)
         except Exception:
@@ -815,7 +825,7 @@ def record_payment():
         api.record_payment(student_id=student_id, amount=amount, month_for=month_for,
                          payment_method=request.form.get('payment_method', 'Cash'),
                          reference=request.form.get('reference', ''))
-        # Automation Rule 3 — payment risk check
+        # Automation Rule 3 â€” payment risk check
         try:
             automation.run_for_student(student_id)
         except Exception:
@@ -844,7 +854,7 @@ def run_automation():
             if r.get('payment') and r['payment'].get('status') == 'restricted':
                 counts['restricted'] += 1
         flash(
-            f"Automation complete — {len(results)} students checked. "
+            f"Automation complete â€” {len(results)} students checked. "
             f"{counts['critical']} critical, {counts['needs_support']} need support, "
             f"{counts['at_risk']} attendance warnings, {counts['restricted']} restricted.",
             'success'
@@ -1227,7 +1237,7 @@ def admin_subject_content():
     items = qexec(conn, query, params).fetchall()
     release_connection(conn)
 
-    # Group by subject → content_type
+    # Group by subject â†’ content_type
     grouped = {}
     for item in items:
         s = item['subject']
@@ -1475,7 +1485,7 @@ def student_videos():
 @app.route('/my-portal/subjects')
 @student_required
 def student_subjects():
-    """Student subject hub — videos, notes, question papers, critical work, exam prep per subject"""
+    """Student subject hub â€” videos, notes, question papers, critical work, exam prep per subject"""
     student_id = session['student_id']
     student = api.get_student_info(student_id)
     if not student:
@@ -1512,7 +1522,7 @@ def student_subjects():
         content_rows = []
     release_connection(conn)
 
-    # Build hub: subject → { videos: [], notes: [], question_paper: [], critical_work: [], exam_prep: [] }
+    # Build hub: subject â†’ { videos: [], notes: [], question_paper: [], critical_work: [], exam_prep: [] }
     hub = {}
     for s in subjects:
         hub[s] = {'videos': [], 'notes': [], 'question_paper': [], 'critical_work': [], 'exam_prep': []}
@@ -1524,11 +1534,11 @@ def student_subjects():
             hub[c['subject']][c['content_type']].append(dict(c))
 
     CONTENT_LABELS = {
-        'videos':        ('Videos',          '▶'),
-        'notes':         ('Notes',           '📄'),
-        'question_paper':('Question Papers', '📋'),
-        'critical_work': ('Critical Work',   '⚡'),
-        'exam_prep':     ('Exam Prep',       '🎯'),
+        'videos':        ('Videos',          'â–¶'),
+        'notes':         ('Notes',           'ðŸ“„'),
+        'question_paper':('Question Papers', 'ðŸ“‹'),
+        'critical_work': ('Critical Work',   'âš¡'),
+        'exam_prep':     ('Exam Prep',       'ðŸŽ¯'),
     }
     return render_template('student_subjects.html',
                            student=student, hub=hub,
@@ -1727,7 +1737,7 @@ if __name__ == '__main__':
     open_host = 'localhost' if host in ('127.0.0.1', 'localhost') else host
 
     print("\n" + "="*70)
-    print("  CLASSDOODLE — Role-Based Dashboard")
+    print("  CLASSDOODLE â€” Role-Based Dashboard")
     print("="*70)
     print("\n  Admin login : username=admin  password=<set via ADMIN_BOOTSTRAP_PASSWORD>")
     print("  Student login: username=<student_id>  password=<temporary/generated or set via admin panel>")
@@ -1736,3 +1746,4 @@ if __name__ == '__main__':
         print("  OFFLINE_MODE: enabled (email/WhatsApp notifications are skipped)")
     print("="*70 + "\n")
     app.run(debug=debug, host=host, port=port, use_reloader=False)
+
